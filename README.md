@@ -346,4 +346,4 @@ Manual grievance handling in institutions leads to lack of accountability, lost 
 This project is licensed under the **MIT License**. Created with dedication for academic excellence and civic engineering.
 
 **Author:** [Sachin Saroj](https://github.com/sachin-saroj)  
-**Repository:** [sachin-saroj/clg-project](https://github.com/sachin-saroj/clg-project)
+**Repository:** [sachin-saroj/clg-project](https://github.com/sachin-saroj/CivicResolve)
