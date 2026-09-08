@@ -1,0 +1,110 @@
+# Project TODO
+
+- [x] Define the civic-service grievance domain model, secure role boundaries, and valid workflow transitions.
+- [x] Extend the database schema for departments, categories, officer profiles, grievances, status histories, attachments, feedback, and in-app notifications.
+- [x] Apply the database migration and build typed server-side query helpers and role-authorized procedures.
+- [x] Build the Scandinavian public portal with service overview, accessible tracking lookup, and clear sign-in and submission entry points.
+- [x] Build authenticated citizen views for dashboard, grievance submission, document upload metadata, grievance detail timeline, feedback, and profile information.
+- [x] Implement the authenticated citizen profile page and navigation route with meaningful account information.
+- [x] Build role-gated officer workspace for assigned queue filtering, case review, status/priority updates, progress remarks, and resolution.
+- [x] Build role-gated administrator workspace for workflow metrics, all-case monitoring, officer assignments, categories, and department management.
+- [x] Persist in-app notifications for grievance assignments, updates, resolutions, and reopenings.
+- [x] Add responsive behavior, form validation, loading states, empty states, accessibility feedback, and navigation escape routes.
+- [x] Write and run Vitest coverage for workflow transition and authorization logic.
+- [x] Verify responsive behavior for authenticated citizen, officer, and administrator routes at desktop and mobile widths, then resolve any layout issues.
+- [x] Add consistent accessible validation and error feedback to interactive officer and administrator forms.
+- [x] Document setup, roles, workflow rules, and the initial administration sequence in the project README.
+- [x] Verify desktop and mobile rendering, resolve defects, and save the completion checkpoint.
+- [x] Verify real citizen dashboard, submission, list, detail, and profile interactions at desktop and mobile under a citizen account.
+- [x] Verify real officer queue and case-processing interactions at desktop and mobile under an officer account.
+- [x] Repeat final checks after role-specific verification and save the completed project state.
+- [x] Define bulk-operation safeguards and extend the officer queue API for authorized batch updates.
+- [x] Add officer queue controls for text search, status, priority, category, and date filters plus useful sorting.
+- [x] Add accessible multi-selection, selection summaries, and controlled bulk status/priority operations to the officer queue.
+- [x] Write and run tests for queue filtering, role enforcement, and bulk workflow updates.
+- [x] Add deterministic tests for advanced officer queue filtering and sorting results.
+- [x] Add success-path tests for assigned-case bulk priority updates with audit and notification effects.
+- [x] Add success-path tests for bulk status transitions, including rejection of mixed invalid transitions.
+- [x] Add direct deterministic tests for implemented officer queue sorting behavior.
+- [x] Add direct deterministic tests for bulk-priority audit-history and citizen-notification payloads.
+- [x] Verify officer queue behavior at desktop and mobile sizes, then save the enhanced project checkpoint.
+- [x] Replace authentication-dependent navigation and workspace gates with a clear login-free public access model.
+- [x] Redesign grievance submission and tracking around a no-login tracking-reference workflow.
+- [x] Expose the case-management queue and bulk actions without sign-in while preserving confirmation, validation, and audit history.
+- [x] Retain compatibility coverage and add login-free public workflow coverage.
+- [x] Verify the public experience at desktop and mobile sizes, then save the login-free project checkpoint.
+- [x] Route full case records through the tracking reference rather than a predictable numeric identifier.
+- [x] Add an explicit accessible confirmation step before public bulk priority or status updates are applied.
+- [x] Re-run public route checks and save the completed login-free project checkpoint.
+- [x] Diagnose submission and case-manager failures using runtime, network, and interaction evidence.
+- [x] Repair unavailable catalog data, empty queue behavior, and public case detail flow defects.
+- [x] Improve submission validation, file feedback, queue filters, selection states, and bulk-action safeguards.
+- [x] Add polished motion, progressive disclosure, loading feedback, and reduced-motion support to primary workflows.
+- [x] Extend automated tests for repaired public submission and queue experiences.
+- [x] Add regression coverage for idempotent live service-catalog initialization.
+- [x] Verify desktop/mobile functionality and visual refinement, then save the enhancement checkpoint.
+- [x] Add test coverage for refreshed public queue data after a successful bulk update.
+- [x] Add test coverage for invalid date-range handling and recovered submission attachment errors.
+- [x] Save the refined workflow checkpoint and record its verification status.
+- [x] Add a regression assertion that the public queue cache is invalidated after a successful bulk update.
+- [x] Save the final refined workflow checkpoint and record its version in the verification note.
+- [x] Create and validate a reusable CivicResolve build skill with concise workflow guidance and references.
+- [x] Add debounced real-time case search with keyboard-accessible autosuggestions to the case manager.
+- [x] Add CSV and PDF report exports that respect the current case-manager filters.
+- [x] Add a persistent dark-mode toggle with accessible contrast across public routes.
+- [x] Add tests for autosuggestion filtering, export formatting, and theme preference persistence.
+- [x] Verify all new features at desktop and mobile sizes, then save the updated checkpoint.
+- [x] Add full keyboard navigation, active-option state, Enter selection, and Escape dismissal to case autosuggestions.
+- [x] Add a shared dark-mode control to the public tracking route and verify readable contrast across all public pages.
+- [x] Add deterministic data-layer coverage for bounded suggestion filtering.
+- [x] Verify CSV/PDF control states, autosuggest keyboard behavior, and dark mode on desktop and mobile; document the empty-data limitation and save a new checkpoint.
+- [x] Add deterministic tests for actual suggestion result shaping and max-result bounding using a controlled data adapter.
+- [x] Browser-verify dark mode on the landing, tracking, submission, and case-manager routes at desktop and mobile sizes.
+- [x] Validate autosuggest ArrowUp, ArrowDown, Enter, and Escape behavior through deterministic keyboard rules; live selection remains data-dependent because the queue has no persisted cases and no test data was created.
+- [x] Document the final verification scope and limitations before the updated checkpoint.
+- [x] Verify mobile layout and theme-control presence on the landing, tracking, submission, and case-manager routes, and document that the fresh mobile screenshot runner starts in light mode while dark-mode behavior was browser-verified on the public routes.
+- [x] Save the updated checkpoint after mobile layout and theme verification.
+
+## Phase 2 Build Directive
+
+- [x] Restore separate internal officer/admin login with secure session and route/write guards while keeping citizen submission and tracking public.
+- [x] Enforce officer versus admin data scopes and show logged-in identity plus logout in the internal case manager.
+- [x] Wire real case-manager records, pagination, tracking-reference detail view, attachments, submitter contact, and chronological status timeline.
+- [x] Complete assignment, officer workload counts, remarks, and lifecycle-safe status transitions with immutable history inserts.
+- [x] Add configurable SLA deadlines, computed escalation checks, priority bumping, audit entries, and overdue filtering.
+- [x] Add one-time public feedback for resolved/closed cases and aggregate metrics for administrators.
+- [x] Add optional submitter email, non-blocking logged email notification attempts for acknowledgement, assignment, status changes, and resolution.
+- [x] Build admin analytics for open/resolved/overdue counts, department/category volume, resolution time, feedback, and escalated cases.
+- [x] Add ordered acceptance tests, responsive verification, documentation, and a final Phase 2 checkpoint.
+- [x] Protect or remove remaining public case-management write procedures such as portal.addProgress.
+- [x] Add staff-scoped case suggestions and stop using public suggestions in the internal queue.
+- [x] Add tests for departmental officer scope, admin full scope, and internal suggestion authorization.
+- [x] Protect or redesign portal.uploadAttachment so existing-case attachment writes are not publicly accessible by raw grievance ID.
+- [x] Add automated tests proving officers see only assigned or departmental cases and admins see all cases.
+- [x] Add tests for out-of-scope internal suggestions and admin-wide suggestions.
+- [x] Add data-layer tests for listAssignedGrievances officer and admin visibility predicates.
+- [x] Add data-layer tests for officer-scoped suggestions excluding out-of-scope results.
+- [x] Add data-layer tests proving administrator suggestions are not department-limited.
+- [x] Add direct listAssignedGrievances tests using a controlled query adapter for officer and admin result scopes.
+- [x] Change staff detail navigation to use tracking references instead of numeric grievance IDs.
+- [x] Add submitter contact details, including email when available, to authenticated grievance detail.
+- [x] Remove the dead false branch from the public case detail implementation.
+- [x] Fix tracking-reference staff detail mutations to use the resolved grievance ID and add regression coverage.
+- [x] Replace remaining public case-detail write controls with a read-only staff sign-in notice and remove unused mutation state.
+- [x] Add coverage proving public detail is read-only and staff tracking-reference actions target the resolved case.
+- [x] Invalidate the active tracking-reference detail query after staff progress and status mutations.
+- [x] Add router regression coverage proving tracking-reference detail resolves writes to the underlying grievance ID.
+- [x] Add source-level coverage proving public case detail has no progress or status write controls.
+- [x] Add regression coverage proving staff progress/status actions use the resolved grievance ID from a tracking-reference detail flow and refresh its tracking query.
+- [x] Add an executable tracking-reference detail mutation harness that resolves a case and verifies progress/status writes target the resolved ID and refresh the tracking query.
+- [x] Add a component-level executable regression for `/officer/cases/:trackingNumber` that invokes progress/status mutations with the resolved case ID and refreshes `detailByTracking` after success.
+- [x] Add and reliably execute a real client component test for `/officer/cases/:trackingNumber` with explicit mocks and CI discovery.
+- [x] Add an admin control to edit SLA hours for existing departments and show overdue/escalated state in the staff queue.
+- [x] Add procedure-level coverage for admin escalation execution and overdue queue filtering.
+- [x] Surface dueAt/escalatedAt in authenticated case detail and queue records.
+- [x] Add no-login tracking-reference feedback submission with one-time enforcement on resolved/closed public cases.
+- [x] Add explicit open-case analytics and a category-volume visualization to the admin dashboard.
+- [x] Add procedure and UI regression coverage for public feedback and the expanded analytics cards.
+- [x] Add and visibly render an explicit open-cases administrator metric backed by the dashboard aggregate.
+- [x] Render category-volume analytics in the administrator dashboard from byCategory data.
+- [x] Add component-level public feedback and administrator analytics UI regression tests to the main suite.

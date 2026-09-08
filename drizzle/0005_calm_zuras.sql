@@ -1,0 +1,1 @@
+ALTER TABLE `grievances` ADD `contactEmail` varchar(320);

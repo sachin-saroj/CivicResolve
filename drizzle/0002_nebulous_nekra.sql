@@ -1,0 +1,1 @@
+ALTER TABLE `grievanceCategories` ADD CONSTRAINT `grievance_categories_department_name_unique` UNIQUE(`departmentId`,`name`);

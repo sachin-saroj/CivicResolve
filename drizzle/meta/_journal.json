@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1787812112638,
+      "tag": "0000_neat_lord_hawal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1787812367748,
+      "tag": "0001_curvy_maximus",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787841165885,
+      "tag": "0002_nebulous_nekra",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787852769975,
+      "tag": "0003_goofy_senator_kelly",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787855134062,
+      "tag": "0004_powerful_siren",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1787855744025,
+      "tag": "0005_calm_zuras",
+      "breakpoints": true
+    }
+  ]
+}
