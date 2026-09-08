@@ -86,14 +86,32 @@ function titleCase(value: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-// Curated pastel tag styles matching reference image
+// Curated pastel tag styles matching reference image in light mode, luminous tones in dark mode
 const categoryBadges: Record<string, { bg: string; text: string }> = {
-  "Street lighting": { bg: "bg-[#ded7fc]", text: "text-[#493a8c]" },
-  "Water supply": { bg: "bg-[#bce0fd]", text: "text-[#1d4f7c]" },
-  Sanitation: { bg: "bg-[#d5eddb]", text: "text-[#235832]" },
-  "Road maintenance": { bg: "bg-[#fdcfba]", text: "text-[#78371e]" },
-  Electrical: { bg: "bg-[#fcedbe]", text: "text-[#69541a]" },
-  Default: { bg: "bg-[#eedbfd]", text: "text-[#5e3184]" },
+  "Street lighting": {
+    bg: "bg-[#ded7fc] dark:bg-[#2a2245]",
+    text: "text-[#493a8c] dark:text-[#c4b5fd]",
+  },
+  "Water supply": {
+    bg: "bg-[#bce0fd] dark:bg-[#1a293b]",
+    text: "text-[#1d4f7c] dark:text-[#93c5fd]",
+  },
+  Sanitation: {
+    bg: "bg-[#d5eddb] dark:bg-[#182d24]",
+    text: "text-[#235832] dark:text-[#86efac]",
+  },
+  "Road maintenance": {
+    bg: "bg-[#fdcfba] dark:bg-[#38211a]",
+    text: "text-[#78371e] dark:text-[#fdba74]",
+  },
+  Electrical: {
+    bg: "bg-[#fcedbe] dark:bg-[#362e19]",
+    text: "text-[#69541a] dark:text-[#fde047]",
+  },
+  Default: {
+    bg: "bg-[#eedbfd] dark:bg-[#341e47]",
+    text: "text-[#5e3184] dark:text-[#d8b4fe]",
+  },
 };
 
 export default function OfficerGrievances() {
@@ -347,24 +365,24 @@ export default function OfficerGrievances() {
       {/* 1. TOP BAR: Title, View Switcher & Action Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">
             Publications & Cases
           </h1>
-          <p className="text-xs text-stone-500 mt-0.5">
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
             Operational queue & SLA resolution board
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Segmented Switcher [List | Board | Workflow] */}
-          <div className="flex items-center rounded-full border border-[#e5dfd5] bg-[#ece6dc]/60 p-1">
+          <div className="flex items-center rounded-full border border-[#e5dfd5] dark:border-[#232730] bg-[#ece6dc]/60 dark:bg-[#15181e] p-1">
             <button
               type="button"
               onClick={() => setViewMode("list")}
               className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
                 viewMode === "list"
-                  ? "bg-stone-900 text-white shadow-xs font-semibold"
-                  : "text-stone-600 hover:text-stone-900"
+                  ? "bg-stone-900 dark:bg-[#202530] text-white shadow-xs font-semibold dark:border dark:border-[#333a4a]"
+                  : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
               }`}
             >
               <LayoutList className="h-3.5 w-3.5" />
@@ -375,8 +393,8 @@ export default function OfficerGrievances() {
               onClick={() => setViewMode("board")}
               className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
                 viewMode === "board"
-                  ? "bg-stone-900 text-white shadow-xs font-semibold"
-                  : "text-stone-600 hover:text-stone-900"
+                  ? "bg-stone-900 dark:bg-[#202530] text-white shadow-xs font-semibold dark:border dark:border-[#333a4a]"
+                  : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
               }`}
             >
               <Kanban className="h-3.5 w-3.5" />
@@ -384,7 +402,7 @@ export default function OfficerGrievances() {
             </button>
             <Link
               href="/track"
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-stone-600 hover:text-stone-900"
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
             >
               <Activity className="h-3.5 w-3.5" />
               <span>Workflow</span>
@@ -401,16 +419,16 @@ export default function OfficerGrievances() {
                 downloadCsv(exportRows, `civicresolve${exportSuffix}.csv`)
               }
               disabled={!exportRows.length}
-              className="h-9 rounded-xl border-[#eae4d8] bg-white text-xs font-medium text-stone-700 shadow-2xs hover:bg-[#f6f2ea]"
+              className="h-9 rounded-xl border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] text-xs font-medium text-stone-700 dark:text-stone-300 shadow-2xs hover:bg-[#f6f2ea] dark:hover:bg-[#1c212a]"
             >
-              <Download className="mr-1.5 h-3.5 w-3.5 text-stone-500" />
+              <Download className="mr-1.5 h-3.5 w-3.5 text-stone-500 dark:text-stone-400" />
               <span>Export</span>
             </Button>
             <Link href="/cases/new">
               <Button
                 type="button"
                 size="sm"
-                className="h-9 rounded-xl border border-stone-800 bg-stone-900 text-white text-xs font-semibold shadow-xs hover:bg-stone-800"
+                className="h-9 rounded-xl border border-stone-800 dark:border-stone-100 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-semibold shadow-xs hover:bg-stone-800 dark:hover:bg-white"
               >
                 <FilePlus2 className="mr-1.5 h-3.5 w-3.5" />
                 <span>New Case</span>
@@ -463,7 +481,7 @@ export default function OfficerGrievances() {
               }
             }}
             placeholder="Search tasks, title, location, or tracking ID..."
-            className="h-10.5 rounded-2xl border-[#eae4d8] bg-white pl-10 pr-9 text-xs font-medium text-stone-800 shadow-2xs placeholder:text-stone-400 focus-visible:ring-stone-400"
+            className="h-10.5 rounded-2xl border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] pl-10 pr-9 text-xs font-medium text-stone-800 dark:text-stone-100 shadow-2xs placeholder:text-stone-400 dark:placeholder:text-stone-500 focus-visible:ring-stone-400 dark:focus-visible:ring-stone-600"
             autoComplete="off"
             role="combobox"
             aria-expanded={
@@ -487,7 +505,7 @@ export default function OfficerGrievances() {
                 setSearch("");
                 setDebouncedSearch("");
               }}
-              className="absolute right-3.5 top-3 text-stone-400 hover:text-stone-700"
+              className="absolute right-3.5 top-3 text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-200"
             >
               <X className="h-4 w-4" />
             </button>
@@ -498,10 +516,10 @@ export default function OfficerGrievances() {
             <div
               id="case-suggestions"
               role="listbox"
-              className="suggestion-popover absolute left-0 right-0 top-12 z-30 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xl"
+              className="suggestion-popover absolute left-0 right-0 top-12 z-30 overflow-hidden rounded-2xl border border-stone-200 dark:border-[#232730] bg-white dark:bg-[#15181e] shadow-xl"
             >
               {suggestions.isLoading ? (
-                <div className="px-4 py-3 text-xs text-stone-400">
+                <div className="px-4 py-3 text-xs text-stone-400 dark:text-stone-500">
                   Searching the case register…
                 </div>
               ) : suggestions.data?.length ? (
@@ -518,18 +536,18 @@ export default function OfficerGrievances() {
                     }}
                     id={`case-suggestion-${index}`}
                     aria-selected={activeSuggestionIndex === index}
-                    className={`suggestion-item flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f6f2ea] ${
-                      activeSuggestionIndex === index ? "bg-[#f6f2ea]" : ""
+                    className={`suggestion-item flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f6f2ea] dark:hover:bg-[#1d222b] ${
+                      activeSuggestionIndex === index ? "bg-[#f6f2ea] dark:bg-[#1d222b]" : ""
                     }`}
                   >
-                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-stone-900 text-white">
+                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-stone-900 dark:bg-[#252a35] text-white">
                       <Search className="h-3.5 w-3.5" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-xs font-bold text-stone-800">
+                      <span className="block text-xs font-bold text-stone-800 dark:text-stone-100">
                         {suggestion.trackingNumber} · {suggestion.title}
                       </span>
-                      <span className="mt-0.5 block truncate text-[11px] text-stone-400">
+                      <span className="mt-0.5 block truncate text-[11px] text-stone-400 dark:text-stone-500">
                         {suggestion.departmentName}
                         {suggestion.location ? ` · ${suggestion.location}` : ""}
                       </span>
@@ -537,7 +555,7 @@ export default function OfficerGrievances() {
                   </button>
                 ))
               ) : (
-                <div className="px-4 py-3 text-xs text-stone-400">
+                <div className="px-4 py-3 text-xs text-stone-400 dark:text-stone-500">
                   No matching cases found.
                 </div>
               )}
@@ -552,7 +570,7 @@ export default function OfficerGrievances() {
             id="queue-status"
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="h-10 rounded-2xl border border-[#eae4d8] bg-white px-3 text-xs font-medium text-stone-700 shadow-2xs"
+            className="h-10 rounded-2xl border border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] px-3 text-xs font-medium text-stone-700 dark:text-stone-200 shadow-2xs"
           >
             <option value="all">All Statuses</option>
             <option value="submitted">Submitted</option>
@@ -568,7 +586,7 @@ export default function OfficerGrievances() {
             id="queue-priority"
             value={priority}
             onChange={(event) => setPriority(event.target.value)}
-            className="h-10 rounded-2xl border border-[#eae4d8] bg-white px-3 text-xs font-medium text-stone-700 shadow-2xs"
+            className="h-10 rounded-2xl border border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] px-3 text-xs font-medium text-stone-700 dark:text-stone-200 shadow-2xs"
           >
             <option value="all">All Priorities</option>
             <option value="critical">Critical</option>
@@ -582,7 +600,7 @@ export default function OfficerGrievances() {
             id="queue-category"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            className="h-10 rounded-2xl border border-[#eae4d8] bg-white px-3 text-xs font-medium text-stone-700 shadow-2xs"
+            className="h-10 rounded-2xl border border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] px-3 text-xs font-medium text-stone-700 dark:text-stone-200 shadow-2xs"
           >
             <option value="all">All Categories</option>
             {catalog.data?.categories.map((category) => (
@@ -597,7 +615,7 @@ export default function OfficerGrievances() {
             id="queue-sort"
             value={sort}
             onChange={(event) => setSort(event.target.value as SortKey)}
-            className="h-10 rounded-2xl border border-[#eae4d8] bg-white px-3 text-xs font-medium text-stone-700 shadow-2xs"
+            className="h-10 rounded-2xl border border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] px-3 text-xs font-medium text-stone-700 dark:text-stone-200 shadow-2xs"
           >
             <option value="updated_desc">Sort by: Recent</option>
             <option value="priority_desc">Sort by: Priority</option>
@@ -606,7 +624,7 @@ export default function OfficerGrievances() {
           </select>
 
           {/* Overdue Checkbox */}
-          <label className="flex h-10 items-center gap-2 rounded-2xl border border-[#eae4d8] bg-white px-3 text-xs font-medium text-stone-700 shadow-2xs cursor-pointer">
+          <label className="flex h-10 items-center gap-2 rounded-2xl border border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] px-3 text-xs font-medium text-stone-700 dark:text-stone-200 shadow-2xs cursor-pointer">
             <Checkbox
               checked={overdueOnly}
               onCheckedChange={(value) => setOverdueOnly(value === true)}
@@ -620,7 +638,7 @@ export default function OfficerGrievances() {
               variant="ghost"
               size="sm"
               onClick={resetFilters}
-              className="h-9 rounded-xl text-xs text-stone-500 hover:text-stone-900"
+              className="h-9 rounded-xl text-xs text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
             >
               <FilterX className="mr-1.5 h-3.5 w-3.5" />
               <span>Reset</span>
@@ -632,70 +650,70 @@ export default function OfficerGrievances() {
       {dateRangeInvalid ? (
         <p
           role="alert"
-          className="flex items-center gap-2 rounded-2xl bg-rose-50 border border-rose-100 px-4 py-2.5 text-xs font-medium text-rose-700"
+          className="flex items-center gap-2 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-100 dark:border-rose-900/60 px-4 py-2.5 text-xs font-medium text-rose-700 dark:text-rose-300"
         >
           <X className="h-3.5 w-3.5" />
           The end date must be the same as or later than the start date.
         </p>
       ) : null}
 
-      {/* 3. KPI / SUMMARY CARDS: 3 Pastel Cards Matching Reference Image */}
+      {/* 3. KPI / SUMMARY CARDS: 3 Pastel Cards in Light Mode, Luminous in Dark Mode */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Card 1: Lavender (Total Tasks / Cases) */}
-        <div className="flex flex-col justify-between rounded-[22px] border border-[#d6cafa] bg-[#ded7fc] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(100,70,180,0.06)] transition hover:translate-y-[-1px]">
+        <div className="flex flex-col justify-between rounded-[22px] border border-[#d6cafa] dark:border-[#382f5c] bg-[#ded7fc] dark:bg-[#1c182c] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(100,70,180,0.06)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] transition hover:translate-y-[-1px]">
           <div className="flex items-center gap-3">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 text-white">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 dark:bg-[#7c3aed] text-white">
               <FolderKanban className="h-4 w-4" />
             </span>
-            <span className="text-xs font-semibold text-stone-800">
+            <span className="text-xs font-semibold text-stone-800 dark:text-[#e9d5ff]">
               Total Tasks
             </span>
           </div>
           <div className="mt-5 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900">
+            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
               {totalCount || 137}
             </span>
-            <span className="text-xs font-semibold text-stone-700/85">
+            <span className="text-xs font-semibold text-stone-700/85 dark:text-[#c4b5fd]">
               +20% vs last month
             </span>
           </div>
         </div>
 
         {/* Card 2: Peach / Coral (Efficiency Score) */}
-        <div className="flex flex-col justify-between rounded-[22px] border border-[#f5c2ad] bg-[#fdcfba] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(180,70,30,0.06)] transition hover:translate-y-[-1px]">
+        <div className="flex flex-col justify-between rounded-[22px] border border-[#f5c2ad] dark:border-[#522c1e] bg-[#fdcfba] dark:bg-[#281b16] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(180,70,30,0.06)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] transition hover:translate-y-[-1px]">
           <div className="flex items-center gap-3">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 text-white">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 dark:bg-[#ea580c] text-white">
               <Zap className="h-4 w-4" />
             </span>
-            <span className="text-xs font-semibold text-stone-800">
+            <span className="text-xs font-semibold text-stone-800 dark:text-[#ffedd5]">
               Efficiency Score
             </span>
           </div>
           <div className="mt-5 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900">
+            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
               8.6
             </span>
-            <span className="text-xs font-semibold text-stone-700/85">
+            <span className="text-xs font-semibold text-stone-700/85 dark:text-[#fdba74]">
               +0.5 vs last month
             </span>
           </div>
         </div>
 
         {/* Card 3: Soft Blue / Sky (Completion Rate) */}
-        <div className="flex flex-col justify-between rounded-[22px] border border-[#abd3fa] bg-[#bce0fd] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(30,100,180,0.06)] transition hover:translate-y-[-1px] sm:col-span-2 lg:col-span-1">
+        <div className="flex flex-col justify-between rounded-[22px] border border-[#abd3fa] dark:border-[#1d3d5e] bg-[#bce0fd] dark:bg-[#132030] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(30,100,180,0.06)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] transition hover:translate-y-[-1px] sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-3">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 text-white">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 dark:bg-[#0284c7] text-white">
               <CheckCircle2 className="h-4 w-4" />
             </span>
-            <span className="text-xs font-semibold text-stone-800">
+            <span className="text-xs font-semibold text-stone-800 dark:text-[#e0f2fe]">
               Completion
             </span>
           </div>
           <div className="mt-5 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900">
+            <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
               {completionRate}%
             </span>
-            <span className="text-xs font-semibold text-stone-700/85">
+            <span className="text-xs font-semibold text-stone-700/85 dark:text-[#7dd3fc]">
               +10% vs last month
             </span>
           </div>
@@ -704,8 +722,8 @@ export default function OfficerGrievances() {
 
       {/* Bulk Update Controls if selected */}
       {selectedCount ? (
-        <div className="flex flex-col gap-3 rounded-2xl border border-[#cfe3f4] bg-[#eff7fd] px-4 py-3 lg:flex-row lg:items-center">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#245d8d]">
+        <div className="flex flex-col gap-3 rounded-2xl border border-[#cfe3f4] dark:border-[#1e344d] bg-[#eff7fd] dark:bg-[#132130] px-4 py-3 lg:flex-row lg:items-center">
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#245d8d] dark:text-[#7dd3fc]">
             <ListChecks className="h-4 w-4" />
             <span aria-live="polite">
               {selectedCount} {selectedCount === 1 ? "case" : "cases"} selected
@@ -713,7 +731,7 @@ export default function OfficerGrievances() {
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
-              className="ml-1 inline-flex items-center gap-1 text-xs font-semibold text-[#39739e] hover:text-[#121413]"
+              className="ml-1 inline-flex items-center gap-1 text-xs font-semibold text-[#39739e] dark:text-[#93c5fd] hover:text-[#121413] dark:hover:text-white"
             >
               <X className="h-3.5 w-3.5" />
               Clear
@@ -727,7 +745,7 @@ export default function OfficerGrievances() {
                 setBulkValue("");
               }}
               aria-label="Bulk action"
-              className="h-9 rounded-xl border border-[#bcd7ec] bg-white px-3 text-xs"
+              className="h-9 rounded-xl border border-[#bcd7ec] dark:border-[#232f3e] bg-white dark:bg-[#182635] text-stone-800 dark:text-stone-200 px-3 text-xs"
             >
               <option value="priority">Set priority</option>
               <option value="status" disabled={!availableStatusTargets.length}>
@@ -740,7 +758,7 @@ export default function OfficerGrievances() {
               aria-label={
                 bulkAction === "priority" ? "New priority" : "New status"
               }
-              className="h-9 rounded-xl border border-[#bcd7ec] bg-white px-3 text-xs"
+              className="h-9 rounded-xl border border-[#bcd7ec] dark:border-[#232f3e] bg-white dark:bg-[#182635] text-stone-800 dark:text-stone-200 px-3 text-xs"
             >
               <option value="">
                 {bulkAction === "priority"
@@ -763,7 +781,7 @@ export default function OfficerGrievances() {
               type="button"
               onClick={() => setConfirmOpen(true)}
               disabled={!bulkValue || bulkUpdate.isPending}
-              className="h-9 rounded-xl bg-stone-900 text-white text-xs font-semibold hover:bg-stone-800"
+              className="h-9 rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-semibold hover:bg-stone-800 dark:hover:bg-white"
             >
               {bulkUpdate.isPending ? "Updating…" : "Apply update"}
             </Button>
@@ -873,7 +891,7 @@ export default function OfficerGrievances() {
                           ? "selected"
                           : undefined
                       }
-                      className="hover:bg-[#fcfaf7] data-[state=selected]:bg-[#eff7fd]"
+                      className="hover:bg-[#fcfaf7] dark:hover:bg-[#1a1e27] data-[state=selected]:bg-[#eff7fd] dark:data-[state=selected]:bg-[#182333]"
                     >
                       <td>
                         <Checkbox
@@ -899,29 +917,29 @@ export default function OfficerGrievances() {
                           />
                         </Link>
                       </td>
-                      <td>
+                      <td className="text-stone-800 dark:text-stone-200">
                         {item.department.name}
-                        <p className="mt-0.5 text-xs text-stone-400">
+                        <p className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">
                           {item.category.name}
                         </p>
                       </td>
                       <td>
                         <PriorityDot priority={item.grievance.priority} />
                       </td>
-                      <td>
+                      <td className="text-stone-600 dark:text-stone-400">
                         {new Date(item.grievance.updatedAt).toLocaleDateString()}
                       </td>
                       <td className="text-xs">
                         {item.grievance.escalatedAt ? (
-                          <span className="font-semibold text-rose-600">
+                          <span className="font-semibold text-rose-600 dark:text-rose-400">
                             Escalated
                           </span>
                         ) : item.grievance.dueAt ? (
                           <span
                             className={
                               new Date(item.grievance.dueAt) < new Date()
-                                ? "font-semibold text-rose-600"
-                                : "text-stone-500"
+                                ? "font-semibold text-rose-600 dark:text-rose-400"
+                                : "text-stone-500 dark:text-stone-400"
                             }
                           >
                             {new Date(
@@ -951,7 +969,7 @@ export default function OfficerGrievances() {
               </EmptyNotice>
             </div>
           )}
-          <div className="flex items-center justify-between border-t border-[#eae4d8] px-5 py-3 text-xs text-stone-500">
+          <div className="flex items-center justify-between border-t border-[#eae4d8] dark:border-[#232730] px-5 py-3 text-xs text-stone-500 dark:text-stone-400">
             <span>
               Page {page + 1} · Showing {queue.data?.length || 0} cases
             </span>
@@ -962,7 +980,7 @@ export default function OfficerGrievances() {
                 variant="outline"
                 disabled={page === 0 || queue.isFetching}
                 onClick={() => setPage((current) => Math.max(0, current - 1))}
-                className="h-8 rounded-xl bg-white border-[#eae4d8]"
+                className="h-8 rounded-xl bg-white dark:bg-[#15181e] border-[#eae4d8] dark:border-[#232730] dark:text-stone-200 dark:hover:bg-[#1c2028]"
               >
                 Previous
               </Button>
@@ -974,7 +992,7 @@ export default function OfficerGrievances() {
                   (queue.data?.length || 0) < pageSize || queue.isFetching
                 }
                 onClick={() => setPage((current) => current + 1)}
-                className="h-8 rounded-xl bg-white border-[#eae4d8]"
+                className="h-8 rounded-xl bg-white dark:bg-[#15181e] border-[#eae4d8] dark:border-[#232730] dark:text-stone-200 dark:hover:bg-[#1c2028]"
               >
                 Next
               </Button>
@@ -985,23 +1003,23 @@ export default function OfficerGrievances() {
 
       {/* Confirmation Dialog for Bulk Operations */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="rounded-3xl border-[#eae4d8] bg-white p-6 shadow-xl">
+        <AlertDialogContent className="rounded-3xl border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] p-6 shadow-xl">
           <AlertDialogHeader>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
               Confirm Action
             </p>
-            <AlertDialogTitle className="text-xl font-bold tracking-tight text-stone-900">
+            <AlertDialogTitle className="text-xl font-bold tracking-tight text-stone-900 dark:text-stone-100">
               Apply this update to {selectedCount}{" "}
               {selectedCount === 1 ? "case" : "cases"}?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs leading-relaxed text-stone-500">
+            <AlertDialogDescription className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
               This will <strong>{bulkActionLabel}</strong>. Each selected case
               will receive an auditable timeline entry, and the view will
               refresh.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4 gap-2">
-            <AlertDialogCancel className="rounded-xl border-[#eae4d8]">
+            <AlertDialogCancel className="rounded-xl border-[#eae4d8] dark:border-[#232730] dark:text-stone-300 dark:hover:bg-[#1a1e27]">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -1009,7 +1027,7 @@ export default function OfficerGrievances() {
                 setConfirmOpen(false);
                 submitBulk();
               }}
-              className="rounded-xl bg-stone-900 text-white hover:bg-stone-800"
+              className="rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-white"
             >
               <Check className="mr-1.5 h-4 w-4" />
               Apply Update
@@ -1044,7 +1062,7 @@ function BoardColumn({
       {/* Column Header */}
       <div className="flex items-center justify-between pb-3 px-1">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-bold text-stone-800 tracking-tight">
+          <h3 className="text-xs font-bold text-stone-800 dark:text-stone-200 tracking-tight">
             {title} ({count})
           </h3>
         </div>
@@ -1110,8 +1128,8 @@ function TaskCard({
 
   return (
     <div
-      className={`group relative rounded-2xl border border-[#ece6dc] bg-white p-4 shadow-[0_2px_8px_-2px_rgba(60,50,40,0.03)] transition-all hover:translate-y-[-1px] hover:shadow-[0_4px_14px_-2px_rgba(60,50,40,0.06)] ${
-        isSelected ? "ring-2 ring-stone-900 border-transparent" : ""
+      className={`group relative rounded-2xl border border-[#ece6dc] dark:border-[#232730] bg-white dark:bg-[#15181e] p-4 shadow-[0_2px_8px_-2px_rgba(60,50,40,0.03)] dark:shadow-[0_4px_16px_-2px_rgba(0,0,0,0.4)] transition-all hover:translate-y-[-1px] hover:shadow-[0_4px_14px_-2px_rgba(60,50,40,0.06)] dark:hover:border-[#353c4a] ${
+        isSelected ? "ring-2 ring-stone-900 dark:ring-stone-400 border-transparent" : ""
       }`}
     >
       {/* Card Header: Category badges + Three-dots */}
@@ -1122,7 +1140,7 @@ function TaskCard({
           >
             {cat}
           </span>
-          <span className="rounded-full bg-[#f4efe6] px-2 py-0.5 text-[10.5px] font-medium text-stone-600">
+          <span className="rounded-full bg-[#f4efe6] dark:bg-[#202530] px-2 py-0.5 text-[10.5px] font-medium text-stone-600 dark:text-stone-300">
             {dept}
           </span>
         </div>
@@ -1131,13 +1149,13 @@ function TaskCard({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="text-stone-400 hover:text-stone-700 p-0.5 rounded-md"
+              className="text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 p-0.5 rounded-md"
               aria-label="Card actions"
             >
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-xl border-[#eae4d8]">
+          <DropdownMenuContent align="end" className="rounded-xl border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] text-stone-800 dark:text-stone-200">
             <DropdownMenuItem asChild>
               <Link
                 href={caseDetailUrl}
@@ -1158,19 +1176,19 @@ function TaskCard({
 
       {/* Card Title & Link */}
       <Link href={caseDetailUrl}>
-        <h4 className="mt-2.5 text-[13px] font-bold text-stone-900 leading-snug tracking-tight hover:text-stone-600">
+        <h4 className="mt-2.5 text-[13px] font-bold text-stone-900 dark:text-stone-100 leading-snug tracking-tight hover:text-stone-600 dark:hover:text-stone-300">
           {g.title}
         </h4>
       </Link>
 
       {/* Description Snippet */}
-      <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-stone-500">
+      <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-stone-500 dark:text-stone-400">
         {g.description || "Grievance submitted by citizen with tracking reference."}
       </p>
 
       {/* Optional Card Preview (just like the app concept preview in the reference image) */}
       {hasPreview ? (
-        <div className="mt-3 overflow-hidden rounded-xl border border-stone-800 bg-[#121413] p-3 text-white flex items-center justify-center gap-2">
+        <div className="mt-3 overflow-hidden rounded-xl border border-stone-800 dark:border-stone-700 bg-[#121413] p-3 text-white flex items-center justify-center gap-2">
           <div className="w-1/2 rounded-lg bg-stone-900 p-2 border border-stone-700 text-[9px] shadow-sm">
             <div className="h-1.5 w-6 rounded-full bg-stone-600 mb-1" />
             <div className="h-1 w-10 rounded-full bg-stone-700 mb-2" />
@@ -1194,27 +1212,27 @@ function TaskCard({
       ) : null}
 
       {/* Card Footer: Due Date, Assignee Avatar & Indicators */}
-      <div className="mt-3.5 flex items-center justify-between border-t border-[#f4eee5] pt-2.5 text-[11px] text-stone-400">
-        <div className="flex items-center gap-1.5 text-stone-600 font-medium">
-          <Calendar className="h-3 w-3 text-stone-400" />
+      <div className="mt-3.5 flex items-center justify-between border-t border-[#f4eee5] dark:border-[#202530] pt-2.5 text-[11px] text-stone-400 dark:text-stone-500">
+        <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300 font-medium">
+          <Calendar className="h-3 w-3 text-stone-400 dark:text-stone-500" />
           <span>{dateStr}</span>
           {g.escalatedAt ? (
-            <span className="rounded-full bg-rose-100 px-1.5 py-0.2 text-[9px] font-bold text-rose-700">
+            <span className="rounded-full bg-rose-100 dark:bg-rose-950/70 px-1.5 py-0.2 text-[9px] font-bold text-rose-700 dark:text-rose-300">
               Escalated
             </span>
           ) : null}
         </div>
 
         <div className="flex items-center gap-2.5">
-          <span className="flex items-center gap-1 hover:text-stone-600">
+          <span className="flex items-center gap-1 hover:text-stone-600 dark:hover:text-stone-300">
             <MessageSquare className="h-3 w-3" />
             <span className="text-[10.5px]">3</span>
           </span>
-          <span className="flex items-center gap-1 hover:text-stone-600">
+          <span className="flex items-center gap-1 hover:text-stone-600 dark:hover:text-stone-300">
             <Paperclip className="h-3 w-3" />
             <span className="text-[10.5px]">1</span>
           </span>
-          <div className="grid h-5.5 w-5.5 place-items-center rounded-full bg-stone-900 text-[10px] font-bold text-white ring-1 ring-white">
+          <div className="grid h-5.5 w-5.5 place-items-center rounded-full bg-stone-900 dark:bg-[#202530] text-[10px] font-bold text-white dark:text-stone-200 ring-1 ring-white dark:ring-[#353c4a]">
             {g.assignedOfficerId ? "O" : "A"}
           </div>
         </div>
@@ -1228,20 +1246,20 @@ function MockCardPlaceholder({ title }: { title: string }) {
   const isReview = title.includes("review");
   const isReady = title.includes("Ready");
   return (
-    <div className="rounded-2xl border border-[#ece6dc] bg-white p-4 shadow-[0_2px_8px_-2px_rgba(60,50,40,0.03)] opacity-90">
+    <div className="rounded-2xl border border-[#ece6dc] dark:border-[#232730] bg-white dark:bg-[#15181e] p-4 shadow-[0_2px_8px_-2px_rgba(60,50,40,0.03)] dark:shadow-[0_4px_16px_-2px_rgba(0,0,0,0.4)] opacity-90">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-[#ded7fc] px-2.5 py-0.5 text-[10.5px] font-semibold text-[#493a8c]">
+          <span className="rounded-full bg-[#ded7fc] dark:bg-[#2a2245] px-2.5 py-0.5 text-[10.5px] font-semibold text-[#493a8c] dark:text-[#c4b5fd]">
             {isReview ? "Design" : isReady ? "Dev" : "Internal"}
           </span>
-          <span className="rounded-full bg-[#fdcfba] px-2 py-0.5 text-[10.5px] font-medium text-[#78371e]">
+          <span className="rounded-full bg-[#fdcfba] dark:bg-[#38211a] px-2 py-0.5 text-[10.5px] font-medium text-[#78371e] dark:text-[#fdba74]">
             {isReview ? "Internal Tasks" : isReady ? "Commercial" : "Planning"}
           </span>
         </div>
-        <MoreVertical className="h-3.5 w-3.5 text-stone-400" />
+        <MoreVertical className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />
       </div>
 
-      <h4 className="mt-2.5 text-[13px] font-bold text-stone-900 leading-snug tracking-tight">
+      <h4 className="mt-2.5 text-[13px] font-bold text-stone-900 dark:text-stone-100 leading-snug tracking-tight">
         {isReview
           ? "Meditation App Concept & Wireframes"
           : isReady
@@ -1249,7 +1267,7 @@ function MockCardPlaceholder({ title }: { title: string }) {
             : "Analytics Dashboard & Charts"}
       </h4>
 
-      <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-stone-500">
+      <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-stone-500 dark:text-stone-400">
         {isReview
           ? "Design a calm, minimalist UI for municipal case workflows with Dark/Light modes."
           : isReady
@@ -1257,9 +1275,9 @@ function MockCardPlaceholder({ title }: { title: string }) {
             : "Design a modern dashboard UI for corporate and campus administration."}
       </p>
 
-      <div className="mt-3.5 flex items-center justify-between border-t border-[#f4eee5] pt-2.5 text-[11px] text-stone-400">
-        <div className="flex items-center gap-1.5 text-stone-600 font-medium">
-          <Calendar className="h-3 w-3 text-stone-400" />
+      <div className="mt-3.5 flex items-center justify-between border-t border-[#f4eee5] dark:border-[#202530] pt-2.5 text-[11px] text-stone-400 dark:text-stone-500">
+        <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300 font-medium">
+          <Calendar className="h-3 w-3 text-stone-400 dark:text-stone-500" />
           <span>25 Sep</span>
         </div>
 
@@ -1272,7 +1290,7 @@ function MockCardPlaceholder({ title }: { title: string }) {
             <Paperclip className="h-3 w-3" />
             <span className="text-[10.5px]">1</span>
           </span>
-          <div className="grid h-5.5 w-5.5 place-items-center rounded-full bg-stone-900 text-[10px] font-bold text-white">
+          <div className="grid h-5.5 w-5.5 place-items-center rounded-full bg-stone-900 dark:bg-[#202530] text-[10px] font-bold text-white dark:text-stone-200">
             S
           </div>
         </div>
