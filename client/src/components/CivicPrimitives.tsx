@@ -43,12 +43,32 @@ export function PriorityDot({ priority }: { priority?: string | null }) {
   return <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-600"><i className={`h-2 w-2 rounded-full ${style[priority || "medium"]}`} />{pretty(priority || "medium")}</span>;
 }
 
-export function MetricCard({ label, value, hint, tone = "blue", icon }: { label: string; value: number | string; hint?: string; tone?: "blue" | "pink" | "lime" | "ink"; icon?: ReactNode }) {
-  const tones = { blue: "bg-[#dfeffc]", pink: "bg-[#f9e2e6]", lime: "bg-[#eaf1d8]", ink: "bg-[#1c1f1d] text-white" };
+export function MetricCard({ label, value, hint, tone = "blue", icon }: { label: string; value: number | string; hint?: string; tone?: "blue" | "pink" | "lime" | "ink" | "lavender" | "peach"; icon?: ReactNode }) {
+  const tones: Record<string, string> = {
+    blue: "bg-[#bce0fd] text-slate-900 border-[#a8d4fa]",
+    lavender: "bg-[#ded7fc] text-slate-900 border-[#cdbffa]",
+    peach: "bg-[#fdcfba] text-slate-900 border-[#f5bba3]",
+    pink: "bg-[#f9e2e6] text-slate-900 border-[#f0cdd4]",
+    lime: "bg-[#d5eddb] text-slate-900 border-[#c1e2c9]",
+    ink: "bg-[#18181b] text-white border-[#27272a]"
+  };
+  const isDark = tone === "ink";
   return (
-    <article className={`rounded-[24px] p-5 sm:p-6 ${tones[tone]} min-h-[144px] flex flex-col justify-between`}>
-      <div className="flex items-start justify-between gap-3"><p className="text-xs font-medium tracking-[0.08em] uppercase opacity-60">{label}</p><span className="opacity-75">{icon}</span></div>
-      <div><p className="text-4xl font-semibold tracking-[-0.07em] leading-none">{value}</p>{hint ? <p className="mt-3 text-xs opacity-65">{hint}</p> : null}</div>
+    <article className={`rounded-[22px] p-5 sm:p-6 ${tones[tone] || tones.blue} border min-h-[144px] flex flex-col justify-between shadow-[0_2px_10px_-2px_rgba(0,0,0,0.03)] transition-all hover:translate-y-[-1px]`}>
+      <div className="flex items-center gap-3">
+        {icon ? (
+          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${isDark ? "bg-white/10 text-white" : "bg-stone-900 text-white"}`}>
+            {icon}
+          </span>
+        ) : null}
+        <p className={`text-xs font-semibold uppercase tracking-[0.06em] ${isDark ? "text-stone-300" : "text-stone-800/90"}`}>{label}</p>
+      </div>
+      <div className="mt-4">
+        <div className="flex items-baseline gap-2">
+          <p className="text-3xl sm:text-4xl font-bold tracking-[-0.05em] leading-none">{value}</p>
+          {hint ? <span className={`text-xs font-medium ${isDark ? "text-stone-400" : "text-stone-700/80"}`}>{hint}</span> : null}
+        </div>
+      </div>
     </article>
   );
 }
