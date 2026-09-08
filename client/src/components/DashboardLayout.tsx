@@ -80,27 +80,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { id: 4, name: "Student Welfare" },
   ];
 
-  const officers = [
-    {
-      name: "Asha Sharma",
-      status: "3 active cases",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-      online: true,
-    },
-    {
-      name: "Rajesh Varma",
-      status: "5 active cases",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-      online: true,
-    },
-    {
-      name: "Kacie Velasquez",
-      status: "12:05 active today",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
-      online: false,
-    },
-  ];
-
   return (
     <SidebarProvider>
       <Sidebar
@@ -167,50 +146,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </button>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Members / Officers Section */}
-          <div className="pt-1">
-            <div className="flex items-center justify-between px-3 pb-2">
-              <span className="text-xs font-semibold tracking-tight text-stone-500">
-                Active Staff
-              </span>
-              <button
-                type="button"
-                onClick={() => setLocation("/manage")}
-                className="grid h-4.5 w-4.5 place-items-center rounded-md text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
-                title="All members"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="space-y-2 px-1">
-              {officers.map((officer) => (
-                <div
-                  key={officer.name}
-                  className="flex items-center gap-2.5 rounded-xl px-2 py-1 transition hover:bg-[#f6f2ea]"
-                >
-                  <div className="relative shrink-0">
-                    <img
-                      src={officer.avatar}
-                      alt={officer.name}
-                      className="h-7 w-7 rounded-full object-cover ring-1 ring-stone-200"
-                    />
-                    {officer.online ? (
-                      <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-stone-800">
-                      {officer.name}
-                    </p>
-                    <p className="truncate text-[10px] text-stone-400">
-                      {officer.status}
-                    </p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </SidebarContent>
