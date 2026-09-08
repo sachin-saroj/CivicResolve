@@ -42,9 +42,9 @@ type NavigationItem = {
 };
 
 const defaultNav: NavigationItem[] = [
-  { label: "Overview", path: "/admin", icon: LayoutGrid },
-  { label: "Activity", path: "/track", icon: Activity },
-  { label: "Tasks & Board", path: "/manage", icon: FolderKanban },
+  { label: "Dashboard & Board", path: "/", icon: FolderKanban },
+  { label: "Executive Analytics", path: "/admin", icon: LayoutGrid },
+  { label: "Track a Case", path: "/track", icon: Activity },
   { label: "Submit Case", path: "/cases/new", icon: FilePlus2 },
 ];
 
@@ -67,10 +67,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const navigationItems = internalUser
     ? defaultNav
     : [
-        { label: "Grievance Portal", path: "/", icon: LayoutGrid },
+        { label: "Dashboard & Board", path: "/", icon: LayoutGrid },
         { label: "Track a Case", path: "/track", icon: Activity },
         { label: "Submit Grievance", path: "/cases/new", icon: FilePlus2 },
-        { label: "Staff Workspace", path: "/manage", icon: FolderKanban },
+        { label: "Staff Sign-in", path: "/staff/login", icon: ShieldCheck },
       ];
 
   const departments = catalog.data?.departments || [
@@ -266,13 +266,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <span className="hidden sm:inline">CivicResolve</span>
               <span className="hidden sm:inline text-stone-300">/</span>
               <span className="font-semibold text-stone-800">
-                {location === "/manage"
+                {location === "/" || location === "/manage"
                   ? "Publications & Cases"
                   : location === "/admin"
                     ? "Executive Analytics"
                     : location === "/cases/new"
                       ? "Submit Grievance"
-                      : "Overview"}
+                      : location.startsWith("/track")
+                        ? "Case Tracking"
+                        : location.startsWith("/cases/") ||
+                          location.startsWith("/officer/cases/")
+                          ? "Case Details"
+                          : "Workspace"}
               </span>
             </div>
           </div>

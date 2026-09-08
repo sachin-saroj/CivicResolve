@@ -101,14 +101,8 @@ export default function OfficerGrievances() {
   const [, setLocation] = useLocation();
   const session = trpc.auth.me.useQuery();
 
-  useEffect(() => {
-    if (
-      !session.isLoading &&
-      session.data?.role !== "officer" &&
-      session.data?.role !== "admin"
-    )
-      setLocation("/staff/login");
-  }, [session.isLoading, session.data, setLocation]);
+  const isStaff =
+    session.data?.role === "officer" || session.data?.role === "admin";
 
   const [viewMode, setViewMode] = useState<ViewMode>("board");
   const [search, setSearch] = useState("");
@@ -169,20 +163,29 @@ export default function OfficerGrievances() {
     setPage(0);
   }, [search, status, priority, categoryId, dateFrom, dateTo, overdueOnly, sort]);
 
-  const queue = trpc.officer.queue.useQuery(params, {
-    enabled:
-      !dateRangeInvalid &&
-      (session.data?.role === "officer" || session.data?.role === "admin"),
+  const staffQueue = trpc.officer.queue.useQuery(params, {
+    enabled: !dateRangeInvalid && isStaff,
   });
+  const publicQueue = trpc.public.board.useQuery(params, {
+    enabled: !dateRangeInvalid && !isStaff,
+  });
+  const queue = isStaff ? staffQueue : publicQueue;
+
   const catalog = trpc.public.catalog.useQuery();
-  const suggestions = trpc.officer.suggestions.useQuery(
+
+  const staffSuggestions = trpc.officer.suggestions.useQuery(
     { search: debouncedSearch },
     {
-      enabled:
-        debouncedSearch.length >= 2 &&
-        (session.data?.role === "officer" || session.data?.role === "admin"),
+      enabled: debouncedSearch.length >= 2 && isStaff,
     }
   );
+  const publicSuggestions = trpc.public.suggestions.useQuery(
+    { search: debouncedSearch },
+    {
+      enabled: debouncedSearch.length >= 2 && !isStaff,
+    }
+  );
+  const suggestions = isStaff ? staffSuggestions : publicSuggestions;
 
   const bulkUpdate = trpc.officer.bulkUpdate.useMutation({
     onSuccess: (data) => {
@@ -192,6 +195,7 @@ export default function OfficerGrievances() {
       setSelectedIds(new Set());
       setBulkValue("");
       void utils.officer.queue.invalidate();
+      void utils.public.board.invalidate();
     },
   });
 
@@ -273,6 +277,15 @@ export default function OfficerGrievances() {
     );
 
   const submitBulk = () => {
+    if (!isStaff) {
+      toast.error("Please sign in as staff or administrator to perform updates.", {
+        action: {
+          label: "Sign in",
+          onClick: () => setLocation("/staff/login"),
+        },
+      });
+      return;
+    }
     bulkUpdate.mutate({
       grievanceIds: Array.from(selectedIds),
       action: bulkAction,
@@ -783,6 +796,7 @@ export default function OfficerGrievances() {
               cases={boardColumns.todo}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
+              isStaff={isStaff}
             />
 
             {/* Column 2: In Progress */}
@@ -793,6 +807,7 @@ export default function OfficerGrievances() {
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
               featuredScreenshot={true}
+              isStaff={isStaff}
             />
 
             {/* Column 3: Under Review */}
@@ -802,6 +817,7 @@ export default function OfficerGrievances() {
               cases={boardColumns.underReview}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
+              isStaff={isStaff}
             />
 
             {/* Column 4: Ready / Resolved */}
@@ -811,6 +827,7 @@ export default function OfficerGrievances() {
               cases={boardColumns.ready}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
+              isStaff={isStaff}
             />
           </div>
         </div>
@@ -869,7 +886,11 @@ export default function OfficerGrievances() {
                       </td>
                       <td>
                         <Link
-                          href={`/officer/cases/${item.grievance.trackingNumber}`}
+                          href={
+                            isStaff
+                              ? `/officer/cases/${item.grievance.trackingNumber}`
+                              : `/cases/${item.grievance.trackingNumber}`
+                          }
                         >
                           <CaseTitle
                             trackingNumber={item.grievance.trackingNumber}
@@ -1008,6 +1029,7 @@ function BoardColumn({
   selectedIds,
   onToggleSelect,
   featuredScreenshot = false,
+  isStaff = false,
 }: {
   title: string;
   count: number;
@@ -1015,6 +1037,7 @@ function BoardColumn({
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
   featuredScreenshot?: boolean;
+  isStaff?: boolean;
 }) {
   return (
     <div className="flex flex-col rounded-2xl bg-transparent">
@@ -1037,6 +1060,7 @@ function BoardColumn({
               isSelected={selectedIds.has(item.grievance.id)}
               onToggleSelect={() => onToggleSelect(item.grievance.id)}
               hasPreview={featuredScreenshot && idx === 0}
+              isStaff={isStaff}
             />
           ))
         ) : (
@@ -1054,11 +1078,13 @@ function TaskCard({
   isSelected,
   onToggleSelect,
   hasPreview = false,
+  isStaff = false,
 }: {
   item: any;
   isSelected: boolean;
   onToggleSelect: () => void;
   hasPreview?: boolean;
+  isStaff?: boolean;
 }) {
   const g = item.grievance;
   const cat = item.category?.name || "General";
@@ -1077,6 +1103,10 @@ function TaskCard({
         day: "numeric",
         month: "short",
       });
+
+  const caseDetailUrl = isStaff
+    ? `/officer/cases/${g.trackingNumber}`
+    : `/cases/${g.trackingNumber}`;
 
   return (
     <div
@@ -1110,7 +1140,7 @@ function TaskCard({
           <DropdownMenuContent align="end" className="rounded-xl border-[#eae4d8]">
             <DropdownMenuItem asChild>
               <Link
-                href={`/officer/cases/${g.trackingNumber}`}
+                href={caseDetailUrl}
                 className="cursor-pointer text-xs"
               >
                 View Case Details
@@ -1127,7 +1157,7 @@ function TaskCard({
       </div>
 
       {/* Card Title & Link */}
-      <Link href={`/officer/cases/${g.trackingNumber}`}>
+      <Link href={caseDetailUrl}>
         <h4 className="mt-2.5 text-[13px] font-bold text-stone-900 leading-snug tracking-tight hover:text-stone-600">
           {g.title}
         </h4>

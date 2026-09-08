@@ -83,6 +83,19 @@ export const appRouter = router({
 
   public: router({
     catalog: publicProcedure.query(() => db.getActiveCatalog()),
+    board: publicProcedure.input(z.object({
+      search: z.string().trim().max(80).optional(),
+      status: z.enum(grievanceStatusValues).optional(),
+      priority: z.enum(priorityValues).optional(),
+      categoryId: z.number().int().positive().optional(),
+      dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      sort: z.enum(["updated_desc", "updated_asc", "priority_desc", "priority_asc", "status_asc"]).optional(),
+      limit: z.number().int().min(1).max(100).optional(),
+      offset: z.number().int().min(0).optional(),
+      overdue: z.boolean().optional(),
+    }).optional()).query(({ input }) => db.listAssignedGrievances(0, input, "admin")),
+    suggestions: publicProcedure.input(z.object({ search: z.string().trim().min(2).max(80) })).query(({ input }) => db.suggestInternalGrievances(input.search, 0, "admin")),
     lookup: publicProcedure.input(z.object({ trackingNumber: z.string().trim().min(5).max(32) })).query(async ({ input }) => {
       const database = requireDb(await db.getDb());
       const rows = await database
