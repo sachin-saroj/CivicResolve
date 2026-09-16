@@ -29,9 +29,10 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 
 const guideSteps = [
-  { step: "01", heading: "Routing & Service", helper: "Department & category" },
-  { step: "02", heading: "The Concern", helper: "Title, details & location" },
+  { step: "01", heading: "Service", helper: "Department & category" },
+  { step: "02", heading: "Concern", helper: "Title, details & location" },
   { step: "03", heading: "Documentation", helper: "Optional proof attachment" },
+  { step: "04", heading: "Review & File", helper: "Verifiable docket preview" },
 ];
 
 async function readAsBase64(file: File) {
@@ -487,6 +488,64 @@ export default function GrievanceForm() {
                       </label>
                     </div>
                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 4: REVIEW & DOCKET PREVIEW */}
+            <section className="space-y-4 pt-4 border-t border-[#f0f2f5] dark:border-[#20242f]">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#f0f2f5] dark:border-[#20242f]">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#eff6ff] dark:bg-[#192742] text-xs font-bold text-[#2563eb]">
+                  04
+                </span>
+                <div>
+                  <h3 className="font-editorial text-xl font-bold text-[#0a0a0a] dark:text-white">
+                    Review & Verification Preview
+                  </h3>
+                  <p className="text-xs text-[#71717a] dark:text-[#a1a1aa]">
+                    Preview of the official civic docket record that will be issued upon registration.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-[#fafcfe] dark:bg-[#151922] border border-[#e4e4e7] dark:border-[#20242f] p-5">
+                <div className="flex items-center justify-between border-b border-[#eceef1] dark:border-[#20242f] pb-3 mb-3">
+                  <span className="font-mono text-xs font-bold text-[#2563eb]">
+                    DRAFT REGISTRATION • GRV-2026-XXXXX
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                    {isReady ? "Ready to Lodge" : "Incomplete Details"}
+                  </span>
+                </div>
+                <p className="font-editorial text-lg sm:text-xl font-bold text-[#0a0a0a] dark:text-white">
+                  {title.trim() || "Pending grievance summary..."}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-[#71717a] dark:text-[#a1a1aa]">
+                  <span>
+                    Dept:{" "}
+                    <strong className="text-[#0a0a0a] dark:text-white">
+                      {catalog.data?.departments.find((d) => d.id === Number(departmentId))?.name || "Unselected"}
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Category:{" "}
+                    <strong className="text-[#0a0a0a] dark:text-white">
+                      {categories.find((c) => c.id === Number(categoryId))?.name || "Unselected"}
+                    </strong>
+                  </span>
+                  {location ? (
+                    <>
+                      <span>•</span>
+                      <span>Location: {location}</span>
+                    </>
+                  ) : null}
+                  {file ? (
+                    <>
+                      <span>•</span>
+                      <span className="text-[#2563eb]">Attachment: {file.name}</span>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </section>
