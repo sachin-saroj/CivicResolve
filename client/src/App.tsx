@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import DashboardLayout from "@/components/DashboardLayout";
+import Home from "@/pages/Home";
 import GrievanceForm from "@/pages/GrievanceForm";
 import InternalLogin from "@/pages/InternalLogin";
 import GrievanceDetail from "@/pages/GrievanceDetail";
@@ -22,8 +23,9 @@ function Workspace({ component: Component }: { component: React.ComponentType })
 
 function Router() {
   return <Switch>
-    <Route path="/">{() => <Workspace component={OfficerGrievances} />}</Route>
+    <Route path="/" component={Home} />
     <Route path="/manage">{() => <Workspace component={OfficerGrievances} />}</Route>
+    <Route path="/board">{() => <Workspace component={OfficerGrievances} />}</Route>
     <Route path="/track" component={PublicTracker} />
     <Route path="/track/:trackingNumber" component={PublicTracker} />
     <Route path="/staff/login" component={InternalLogin} />

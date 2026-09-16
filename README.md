@@ -37,6 +37,39 @@ CivicResolve resolves this through a **dual-architecture paradigm**:
 
 ---
 
+## 📸 Interface Gallery (Real Application Screenshots)
+
+> **Authentic Captures:** All screenshots below are direct browser captures from the live CivicResolve application running in production mode.
+
+### 1. Public Civic Portal & Manifesto (Bespoke Editorial Aesthetics)
+| Hero & Fast Case Lookup | Live Case Triage & Civic Dossier |
+|:---:|:---:|
+| ![Editorial Portal Hero](docs/screenshots/01_home_hero.png) | ![Civic Dossier & Manifesto](docs/screenshots/02_home_manifesto.png) |
+
+| Civic Wordmark & Registry Footer | Custom Editorial 404 Docket Handler |
+|:---:|:---:|
+| ![Editorial Footer](docs/screenshots/03_home_footer.png) | ![Editorial 404](docs/screenshots/11_editorial_404.png) |
+
+### 2. Friction-Free Public Filing & Tracking
+| 3-Step Guided Grievance Submission (`/cases/new`) | Real-Time Public Docket Tracker (`/track`) |
+|:---:|:---:|
+| ![Grievance Submission](docs/screenshots/04_case_submission.png) | ![Public Docket Tracker](docs/screenshots/05_public_tracker.png) |
+
+### 3. Operations Workspace & Executive Telemetry
+| Staff & Officer Authorization Portal (`/staff/login`) | Departmental Case Board & Queue (`/manage`) |
+|:---:|:---:|
+| ![Staff Login Portal](docs/screenshots/06_staff_login.png) | ![Officer Case Board](docs/screenshots/07_officer_board.png) |
+
+| Executive Analytics & SLA Heatmaps (`/admin`) | Department Registry Management (`/admin/departments`) |
+|:---:|:---:|
+| ![Executive Analytics](docs/screenshots/08_admin_analytics.png) | ![Department Registry](docs/screenshots/09_admin_departments.png) |
+
+| Category Taxonomy Configuration (`/admin/categories`) | Mobile Responsive Experience (375px) |
+|:---:|:---:|
+| ![Category Configuration](docs/screenshots/10_admin_categories.png) | ![Mobile View](docs/screenshots/12_mobile_home.png) |
+
+---
+
 ## 🚀 Core Capabilities
 
 ```

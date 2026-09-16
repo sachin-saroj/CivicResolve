@@ -45,7 +45,7 @@ type NavigationItem = {
 };
 
 const defaultNav: NavigationItem[] = [
-  { label: "Dashboard & Board", path: "/", icon: FolderKanban },
+  { label: "Case Board & Queue", path: "/manage", icon: FolderKanban },
   { label: "Executive Analytics", path: "/admin", icon: LayoutGrid },
   { label: "Track a Case", path: "/track", icon: Activity },
   { label: "Submit Case", path: "/cases/new", icon: FilePlus2 },
@@ -78,7 +78,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const navigationItems = internalUser
     ? defaultNav
     : [
-        { label: "Dashboard & Board", path: "/", icon: LayoutGrid },
+        { label: "Home", path: "/", icon: LayoutGrid },
+        { label: "Public Board", path: "/manage", icon: FolderKanban },
         { label: "Track a Case", path: "/track", icon: Activity },
         { label: "Submit Grievance", path: "/cases/new", icon: FilePlus2 },
         { label: "Staff Sign-in", path: "/staff/login", icon: ShieldCheck },
@@ -165,7 +166,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </span>
               <button
                 type="button"
-                onClick={() => setLocation("/")}
+                onClick={() => setLocation("/manage")}
                 className="grid h-4.5 w-4.5 place-items-center rounded-md text-stone-400 dark:text-stone-500 transition hover:bg-stone-100 dark:hover:bg-[#15181e] hover:text-stone-700 dark:hover:text-stone-200"
                 title="View departments"
               >
@@ -180,7 +181,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <button
                     key={dept.id}
                     type="button"
-                    onClick={() => setLocation("/")}
+                    onClick={() => setLocation("/manage")}
                     className="flex w-full items-center gap-2.5 rounded-xl px-3 py-1.5 text-left text-[12.5px] font-medium text-stone-600 dark:text-stone-400 transition hover:bg-[#f6f2ea] dark:hover:bg-[#15181e] hover:text-stone-900 dark:hover:text-stone-100"
                   >
                     <IconComponent className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />
@@ -234,27 +235,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset className="min-h-screen bg-[#f6f3ec] dark:bg-[#0d0f12]">
+      <SidebarInset className="min-h-screen bg-[#fafcfe] dark:bg-[#090a0d]">
         {/* Minimal Top Header */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#eae4d8]/80 dark:border-[#1d2027] bg-[#f6f3ec]/90 dark:bg-[#0d0f12]/90 px-5 backdrop-blur sm:px-8">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#e8eaed]/80 dark:border-[#1e232e] bg-[#fafcfe]/90 dark:bg-[#090a0d]/90 px-5 backdrop-blur sm:px-8">
           <div className="flex items-center gap-3">
-            <SidebarTrigger className="rounded-xl border border-[#eae4d8] dark:border-[#232730] bg-white dark:bg-[#15181e] text-stone-700 dark:text-stone-200 shadow-sm md:hidden" />
+            <SidebarTrigger className="rounded-xl border border-[#e4e4e7] dark:border-[#232730] bg-white dark:bg-[#15181e] text-stone-700 dark:text-stone-200 shadow-sm md:hidden" />
             <div className="flex items-center gap-2 text-xs font-medium text-stone-500 dark:text-stone-400">
               <span className="hidden sm:inline">CivicResolve</span>
               <span className="hidden sm:inline text-stone-300 dark:text-stone-600">/</span>
               <span className="font-semibold text-stone-800 dark:text-stone-100">
-                {location === "/" || location === "/manage"
-                  ? "Publications & Cases"
-                  : location === "/admin"
-                    ? "Executive Analytics"
-                    : location === "/cases/new"
-                      ? "Submit Grievance"
-                      : location.startsWith("/track")
-                        ? "Case Tracking"
-                        : location.startsWith("/cases/") ||
-                          location.startsWith("/officer/cases/")
-                          ? "Case Details"
-                          : "Workspace"}
+                {location === "/"
+                  ? "Civic Portal"
+                  : location === "/manage" || location === "/board"
+                    ? "Case Board & Queue"
+                    : location === "/admin"
+                      ? "Executive Analytics"
+                      : location === "/cases/new"
+                        ? "Submit Grievance"
+                        : location.startsWith("/track")
+                          ? "Case Tracking"
+                          : location.startsWith("/cases/") ||
+                            location.startsWith("/officer/cases/")
+                            ? "Case Details"
+                            : "Workspace"}
               </span>
             </div>
           </div>

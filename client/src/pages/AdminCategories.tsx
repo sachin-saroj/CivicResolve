@@ -1,18 +1,218 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { EmptyNotice, PageHeader, pretty } from "@/components/CivicPrimitives";
+import { EmptyNotice, PageHeader, PillButton, pretty } from "@/components/CivicPrimitives";
 import { MutationAlert } from "@/components/MutationAlert";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { Plus, Tags } from "lucide-react";
+import { Plus, Tag, Tags } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 
 export default function AdminCategories() {
-  const { user } = useAuth(); const utils = trpc.useUtils(); const categories = trpc.admin.categories.useQuery(undefined, { enabled: user?.role === "admin" }); const departments = trpc.admin.departments.useQuery(undefined, { enabled: user?.role === "admin" }); const [name, setName] = useState(""); const [description, setDescription] = useState(""); const [departmentId, setDepartmentId] = useState("");
-  const create = trpc.admin.createCategory.useMutation({ onSuccess: () => { setName(""); setDescription(""); setDepartmentId(""); utils.admin.categories.invalidate(); utils.public.catalog.invalidate(); toast.success("Category created"); }, onError: error => toast.error(error.message) }); const setStatus = trpc.admin.setCategoryStatus.useMutation({ onSuccess: () => { utils.admin.categories.invalidate(); utils.public.catalog.invalidate(); toast.success("Category status updated"); } });
-  if (user?.role && user.role !== "admin") return <EmptyNotice title="Administrator access required">This view is reserved for system administration.</EmptyNotice>;
-  const submit = (event: FormEvent) => { event.preventDefault(); create.mutate({ name: name.trim(), departmentId: Number(departmentId), description: description.trim() || undefined }); };
-  return <div className="space-y-8"><PageHeader eyebrow="Administrator workspace" title="Grievance categories" description="Use clear, department-specific categories to make citizen submissions easier to route and report on." /><section className="grid gap-6 lg:grid-cols-[.7fr_1.3fr]"><form onSubmit={submit} className="surface h-fit p-6"><p className="micro-label">Add category</p><h2 className="mt-1 text-xl font-semibold tracking-[-0.04em]">Define a service topic</h2><select value={departmentId} onChange={event => setDepartmentId(event.target.value)} className="mt-6 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm"><option value="">Choose department</option>{departments.data?.filter(item => item.status === "active").map(department => <option key={department.id} value={department.id}>{department.name}</option>)}</select><Input value={name} onChange={event => setName(event.target.value)} className="mt-3" placeholder="e.g. Road maintenance" /><Textarea value={description} onChange={event => setDescription(event.target.value)} className="mt-3 min-h-24" placeholder="Brief category guidance" /><MutationAlert message={create.error?.message || setStatus.error?.message} /><Button disabled={create.isPending || !departmentId || name.trim().length < 3} className="mt-4 rounded-xl bg-[#121413] text-white hover:bg-[#303431]"><Plus className="mr-2 h-4 w-4" />Add category</Button></form><div className="grid gap-3 sm:grid-cols-2">{categories.isLoading ? <div className="h-40 animate-pulse rounded-[24px] bg-white" /> : categories.data?.length ? categories.data.map(item => <article key={item.category.id} className="surface p-6"><div className="flex items-start justify-between gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f9e2e6] text-[#aa6071]"><Tags className="h-4 w-4" /></span><Button size="sm" variant="outline" onClick={() => setStatus.mutate({ categoryId: item.category.id, status: item.category.status === "active" ? "inactive" : "active" })} className="rounded-lg text-xs">{item.category.status === "active" ? "Deactivate" : "Activate"}</Button></div><p className="mt-5 text-xs font-semibold tracking-[0.08em] text-slate-400">{item.department.name}</p><h3 className="mt-1 font-semibold tracking-[-0.03em]">{item.category.name}</h3><p className="mt-2 min-h-10 text-sm leading-5 text-slate-500">{item.category.description || "No description provided."}</p><p className="mt-5 text-xs font-semibold capitalize text-slate-400">{pretty(item.category.status)}</p></article>) : <div className="sm:col-span-2"><EmptyNotice title="No categories yet">Create a department, then define the topics citizens can choose from.</EmptyNotice></div>}</div></section></div>;
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const categories = trpc.admin.categories.useQuery(undefined, { enabled: user?.role === "admin" });
+  const departments = trpc.admin.departments.useQuery(undefined, { enabled: user?.role === "admin" });
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+
+  const create = trpc.admin.createCategory.useMutation({
+    onSuccess: () => {
+      setName("");
+      setDescription("");
+      setDepartmentId("");
+      utils.admin.categories.invalidate();
+      utils.public.catalog.invalidate();
+      toast.success("Civic complaint category created.");
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const setStatus = trpc.admin.setCategoryStatus.useMutation({
+    onSuccess: () => {
+      utils.admin.categories.invalidate();
+      utils.public.catalog.invalidate();
+      toast.success("Category status updated.");
+    },
+  });
+
+  if (user?.role && user.role !== "admin") {
+    return (
+      <EmptyNotice title="Administrator Access Required">
+        This category management workspace is reserved exclusively for system administrators.
+      </EmptyNotice>
+    );
+  }
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    create.mutate({
+      name: name.trim(),
+      departmentId: Number(departmentId),
+      description: description.trim() || undefined,
+    });
+  };
+
+  return (
+    <div className="space-y-10 font-sans">
+      <PageHeader
+        eyebrow="Taxonomy Governance"
+        title="Grievance Categories"
+        description="Define structured, department-specific complaint categories to enable automated citizen routing, SLA tracking, and accurate reporting."
+      />
+
+      <section className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+        {/* Left: Create Category Form */}
+        <div className="rounded-3xl bg-white dark:bg-[#12151b] border border-[#e4e4e7] dark:border-[#20242f] p-6 sm:p-8 shadow-xs h-fit">
+          <div className="pb-4 border-b border-[#f0f2f5] dark:border-[#20242f]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#0d9488] dark:text-[#2dd4bf]">
+              Structured Filing Topic
+            </p>
+            <h2 className="font-editorial text-2xl font-bold text-[#0a0a0a] dark:text-white mt-1">
+              Add Complaint Category
+            </h2>
+          </div>
+
+          <form onSubmit={submit} className="mt-6 space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-[#52525b] dark:text-[#a1a1aa] block mb-1.5">
+                Responsible Service Department
+              </label>
+              <select
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                className="w-full rounded-xl border border-[#e4e4e7] dark:border-[#20242f] bg-white dark:bg-[#181d26] px-3.5 py-2.5 text-sm text-[#0a0a0a] dark:text-white outline-none focus:ring-2 focus:ring-[#2563eb]"
+              >
+                <option value="">Choose designated department</option>
+                {departments.data
+                  ?.filter((item) => item.status === "active")
+                  .map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-[#52525b] dark:text-[#a1a1aa] block mb-1.5">
+                Category Title
+              </label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Street Lighting Outage"
+                className="rounded-xl border-[#e4e4e7] dark:border-[#20242f] bg-white dark:bg-[#181d26] px-3.5 py-2.5 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-[#52525b] dark:text-[#a1a1aa] block mb-1.5">
+                Citizen Guidance & Scope
+              </label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief advice guiding citizens on what falls under this category..."
+                className="rounded-xl border-[#e4e4e7] dark:border-[#20242f] bg-white dark:bg-[#181d26] px-3.5 py-2.5 text-sm min-h-24"
+              />
+            </div>
+
+            <MutationAlert message={create.error?.message || setStatus.error?.message} />
+
+            <div className="pt-2">
+              <PillButton
+                type="submit"
+                variant="primary"
+                size="md"
+                disabled={create.isPending || !departmentId || name.trim().length < 3}
+                className="w-full"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span>{create.isPending ? "Registering…" : "Register Category"}</span>
+              </PillButton>
+            </div>
+          </form>
+        </div>
+
+        {/* Right: Category Cards */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#71717a] dark:text-[#a1a1aa]">
+                Taxonomy Catalog
+              </p>
+              <h3 className="font-editorial text-2xl font-bold text-[#0a0a0a] dark:text-white">
+                Active Categories ({categories.data?.length || 0})
+              </h3>
+            </div>
+          </div>
+
+          {categories.isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="h-44 animate-pulse rounded-3xl bg-neutral-100 dark:bg-neutral-800" />
+              ))}
+            </div>
+          ) : categories.data?.length ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {categories.data.map((item) => {
+                const isActive = item.category.status === "active";
+                return (
+                  <article
+                    key={item.category.id}
+                    className="rounded-3xl bg-white dark:bg-[#12151b] border border-[#e4e4e7] dark:border-[#20242f] p-6 shadow-xs flex flex-col justify-between transition-all hover:translate-y-[-2px] hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#f0f2f5] dark:border-[#20242f]">
+                        <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 text-[#52525b] dark:text-[#a1a1aa]">
+                          {item.department.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setStatus.mutate({
+                              categoryId: item.category.id,
+                              status: isActive ? "inactive" : "active",
+                            })
+                          }
+                          className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                            isActive
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100"
+                              : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200"
+                          }`}
+                        >
+                          {isActive ? "Active" : "Archived"}
+                        </button>
+                      </div>
+
+                      <h3 className="font-editorial text-xl font-bold text-[#0a0a0a] dark:text-white mt-4">
+                        {item.category.name}
+                      </h3>
+                      <p className="mt-2 text-xs leading-relaxed text-[#52525b] dark:text-[#a1a1aa] min-h-10">
+                        {item.category.description || "No specific instructions recorded for this category."}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 pt-3 border-t border-[#f0f2f5] dark:border-[#20242f] flex items-center justify-between text-xs text-[#71717a] dark:text-[#a1a1aa]">
+                      <span className="capitalize font-semibold">{pretty(item.category.status)}</span>
+                      <span className="text-[10px] uppercase font-bold text-[#2563eb] dark:text-[#60a5fa]">
+                        Verified Topic
+                      </span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyNotice title="No Categories Defined">
+              Establish service categories to allow citizens to properly tag and file their grievances.
+            </EmptyNotice>
+          )}
+        </div>
+      </section>
+    </div>
+  );
 }
+

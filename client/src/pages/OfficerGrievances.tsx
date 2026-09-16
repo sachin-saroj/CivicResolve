@@ -1190,7 +1190,7 @@ function TaskCard({
 
       {/* Card Title & Link */}
       <Link href={caseDetailUrl}>
-        <h4 className="mt-2.5 text-[13px] font-bold text-stone-900 dark:text-stone-100 leading-snug tracking-tight hover:text-stone-600 dark:hover:text-stone-300">
+        <h4 className="mt-2.5 font-editorial text-[15px] font-bold text-[#0a0a0a] dark:text-white leading-snug tracking-tight hover:text-[#2563eb] dark:hover:text-[#60a5fa]">
           {g.title}
         </h4>
       </Link>
