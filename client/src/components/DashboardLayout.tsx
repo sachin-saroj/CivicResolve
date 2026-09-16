@@ -17,6 +17,7 @@ import {
   Activity,
   Building2,
   CheckSquare,
+  ClipboardList,
   FilePlus2,
   FolderKanban,
   LayoutGrid,
@@ -29,6 +30,8 @@ import {
   ShieldCheck,
   Sparkles,
   Sun,
+  Tags,
+  UserCheck,
   Users,
   Zap,
 } from "lucide-react";
@@ -46,6 +49,14 @@ const defaultNav: NavigationItem[] = [
   { label: "Executive Analytics", path: "/admin", icon: LayoutGrid },
   { label: "Track a Case", path: "/track", icon: Activity },
   { label: "Submit Case", path: "/cases/new", icon: FilePlus2 },
+];
+
+const adminNav: NavigationItem[] = [
+  { label: "Case Triage", path: "/admin/cases", icon: ClipboardList },
+  { label: "Departments", path: "/admin/departments", icon: Building2 },
+  { label: "Categories", path: "/admin/categories", icon: Tags },
+  { label: "Officer Staff", path: "/admin/officers", icon: UserCheck },
+  { label: "User Directory", path: "/admin/users", icon: Users },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -114,6 +125,37 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               })}
             </SidebarMenu>
           </div>
+
+          {/* Administration Section */}
+          {session.data?.role === "admin" && (
+            <div className="pt-1">
+              <div className="flex items-center justify-between px-3 pb-2">
+                <span className="text-xs font-semibold tracking-tight text-stone-500 dark:text-stone-400">
+                  Administration
+                </span>
+              </div>
+              <SidebarMenu className="space-y-1">
+                {adminNav.map((item) => {
+                  const isActive =
+                    location === item.path ||
+                    (item.path !== "/" && location.startsWith(`${item.path}/`));
+                  return (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setLocation(item.path)}
+                        tooltip={item.label}
+                        className="h-9.5 rounded-xl px-3 text-[13px] font-medium text-stone-600 dark:text-stone-400 transition-all hover:bg-[#f6f2ea] dark:hover:bg-[#15181e] hover:text-stone-900 dark:hover:text-stone-100 data-[active=true]:bg-stone-900 dark:data-[active=true]:bg-[#1f242e] data-[active=true]:text-white dark:data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-sm dark:data-[active=true]:border dark:data-[active=true]:border-[#2d3340]"
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </div>
+          )}
 
           {/* Projects / Departments Section */}
           <div className="pt-2">

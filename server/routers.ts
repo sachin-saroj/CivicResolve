@@ -313,13 +313,20 @@ export const appRouter = router({
       const detail = await getOwnedOrAccessibleCase(input.grievanceId, ctx.user.id, "admin");
       const profile = await database.select().from(officerProfiles).where(eq(officerProfiles.userId, input.officerId)).limit(1);
       if (!profile[0] || profile[0].departmentId !== detail.grievance.departmentId) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose an available officer from the grievance department." });
-      if (detail.grievance.status === "submitted") {
+
+      const currentStatus = detail.grievance.status;
+      if (currentStatus === "submitted") {
         await db.updateGrievanceWorkflow({ grievanceId: input.grievanceId, nextStatus: "acknowledged", remarks: "Grievance acknowledged for department review.", changedByUserId: ctx.user.id });
+        await database.update(grievances).set({ assignedOfficerId: input.officerId }).where(eq(grievances.id, input.grievanceId));
+        await db.updateGrievanceWorkflow({ grievanceId: input.grievanceId, nextStatus: "assigned", remarks: "Grievance assigned to the responsible officer.", changedByUserId: ctx.user.id });
+      } else if (currentStatus === "acknowledged") {
+        await database.update(grievances).set({ assignedOfficerId: input.officerId }).where(eq(grievances.id, input.grievanceId));
+        await db.updateGrievanceWorkflow({ grievanceId: input.grievanceId, nextStatus: "assigned", remarks: "Grievance assigned to the responsible officer.", changedByUserId: ctx.user.id });
+      } else {
+        await database.update(grievances).set({ assignedOfficerId: input.officerId }).where(eq(grievances.id, input.grievanceId));
+        await db.addGrievanceProgress({ grievanceId: input.grievanceId, remarks: "Responsible officer reassigned by administrator.", changedByUserId: ctx.user.id });
       }
-      const refreshed = await db.getGrievanceDetail(input.grievanceId);
-      if (!refreshed || refreshed.grievance.status !== "acknowledged") throw new TRPCError({ code: "BAD_REQUEST", message: "Only acknowledged grievances can be assigned." });
-      await database.update(grievances).set({ assignedOfficerId: input.officerId }).where(eq(grievances.id, input.grievanceId));
-      await db.updateGrievanceWorkflow({ grievanceId: input.grievanceId, nextStatus: "assigned", remarks: "Grievance assigned to the responsible officer.", changedByUserId: ctx.user.id });
+
       await database.insert(notifications).values({ userId: input.officerId, grievanceId: input.grievanceId, title: "New grievance assignment", message: `You have been assigned ${detail.grievance.trackingNumber}.`, type: "assigned" });
       if (detail.grievance.contactEmail) void db.logEmailNotificationAttempt({ userId: detail.grievance.userId, grievanceId: input.grievanceId, recipient: detail.grievance.contactEmail, event: "assignment", trackingNumber: detail.grievance.trackingNumber });
       return { success: true };

@@ -7,6 +7,11 @@ import GrievanceDetail from "@/pages/GrievanceDetail";
 import NotFound from "@/pages/NotFound";
 import OfficerGrievances from "@/pages/OfficerGrievances";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminDepartments from "@/pages/AdminDepartments";
+import AdminCategories from "@/pages/AdminCategories";
+import AdminOfficers from "@/pages/AdminOfficers";
+import AdminGrievances from "@/pages/AdminGrievances";
+import AdminUsers from "@/pages/AdminUsers";
 import PublicCaseDetail from "@/pages/PublicCaseDetail";
 import PublicTracker from "@/pages/PublicTracker";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -25,7 +30,13 @@ function Router() {
     <Route path="/cases/new">{() => <Workspace component={GrievanceForm} />}</Route>
     <Route path="/cases/:trackingNumber">{() => <Workspace component={PublicCaseDetail} />}</Route>
     <Route path="/admin">{() => <Workspace component={AdminDashboard} />}</Route>
+    <Route path="/admin/departments">{() => <Workspace component={AdminDepartments} />}</Route>
+    <Route path="/admin/categories">{() => <Workspace component={AdminCategories} />}</Route>
+    <Route path="/admin/officers">{() => <Workspace component={AdminOfficers} />}</Route>
+    <Route path="/admin/cases">{() => <Workspace component={AdminGrievances} />}</Route>
+    <Route path="/admin/users">{() => <Workspace component={AdminUsers} />}</Route>
     <Route path="/officer/cases/:trackingNumber">{() => <Workspace component={GrievanceDetail} />}</Route>
+    <Route path="/grievances/:id">{() => <Workspace component={GrievanceDetail} />}</Route>
     <Route component={NotFound} />
   </Switch>;
 }

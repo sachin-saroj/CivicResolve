@@ -49,9 +49,7 @@ import {
   Kanban,
   LayoutList,
   ListChecks,
-  MessageSquare,
   MoreVertical,
-  Paperclip,
   Search,
   Share2,
   SlidersHorizontal,
@@ -352,13 +350,29 @@ export default function OfficerGrievances() {
     };
   }, [queue.data]);
 
-  // Derived metrics for summary cards
-  const totalCount = queue.data?.length || 0;
+  // Derived metrics for summary cards from real database records
+  const totalCount = queue.data?.length ?? 0;
   const inProgressCount =
     boardColumns.inProgress.length + boardColumns.underReview.length;
   const resolvedCount = boardColumns.ready.length;
   const completionRate =
-    totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 74;
+    totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0;
+
+  // Derive average resolution time from resolved cases in current queue
+  const resolvedCases = (queue.data || []).filter(
+    (c) => c.grievance.status === "resolved" || c.grievance.status === "closed"
+  );
+  const avgResolutionHours =
+    resolvedCases.length > 0
+      ? (
+          resolvedCases.reduce((acc, c) => {
+            const diff =
+              new Date(c.grievance.updatedAt).getTime() -
+              new Date(c.grievance.createdAt).getTime();
+            return acc + diff / (1000 * 60 * 60);
+          }, 0) / resolvedCases.length
+        ).toFixed(1)
+      : null;
 
   return (
     <div className="space-y-6 pb-12 font-sans">
@@ -657,9 +671,9 @@ export default function OfficerGrievances() {
         </p>
       ) : null}
 
-      {/* 3. KPI / SUMMARY CARDS: 3 Pastel Cards in Light Mode, Luminous in Dark Mode */}
+      {/* 3. KPI / SUMMARY CARDS: Real System Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Card 1: Lavender (Total Tasks / Cases) */}
+        {/* Card 1: Total Tasks / Cases */}
         <div className="flex flex-col justify-between rounded-[22px] border border-[#d6cafa] dark:border-[#382f5c] bg-[#ded7fc] dark:bg-[#1c182c] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(100,70,180,0.06)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] transition hover:translate-y-[-1px]">
           <div className="flex items-center gap-3">
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 dark:bg-[#7c3aed] text-white">
@@ -671,35 +685,37 @@ export default function OfficerGrievances() {
           </div>
           <div className="mt-5 flex items-baseline gap-2">
             <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
-              {totalCount || 137}
+              {totalCount}
             </span>
             <span className="text-xs font-semibold text-stone-700/85 dark:text-[#c4b5fd]">
-              +20% vs last month
+              {totalCount === 1 ? "1 case registered" : `${totalCount} cases registered`}
             </span>
           </div>
         </div>
 
-        {/* Card 2: Peach / Coral (Efficiency Score) */}
+        {/* Card 2: Resolution Time / Efficiency */}
         <div className="flex flex-col justify-between rounded-[22px] border border-[#f5c2ad] dark:border-[#522c1e] bg-[#fdcfba] dark:bg-[#281b16] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(180,70,30,0.06)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] transition hover:translate-y-[-1px]">
           <div className="flex items-center gap-3">
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 dark:bg-[#ea580c] text-white">
               <Zap className="h-4 w-4" />
             </span>
             <span className="text-xs font-semibold text-stone-800 dark:text-[#ffedd5]">
-              Efficiency Score
+              Avg Resolution Time
             </span>
           </div>
           <div className="mt-5 flex items-baseline gap-2">
             <span className="text-3xl sm:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
-              8.6
+              {avgResolutionHours ? `${avgResolutionHours}h` : "N/A"}
             </span>
             <span className="text-xs font-semibold text-stone-700/85 dark:text-[#fdba74]">
-              +0.5 vs last month
+              {avgResolutionHours
+                ? "Based on resolved cases"
+                : "Not enough data yet"}
             </span>
           </div>
         </div>
 
-        {/* Card 3: Soft Blue / Sky (Completion Rate) */}
+        {/* Card 3: Completion Rate */}
         <div className="flex flex-col justify-between rounded-[22px] border border-[#abd3fa] dark:border-[#1d3d5e] bg-[#bce0fd] dark:bg-[#132030] p-5 sm:p-6 shadow-[0_2px_12px_-2px_rgba(30,100,180,0.06)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] transition hover:translate-y-[-1px] sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-3">
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-stone-900 dark:bg-[#0284c7] text-white">
@@ -714,7 +730,7 @@ export default function OfficerGrievances() {
               {completionRate}%
             </span>
             <span className="text-xs font-semibold text-stone-700/85 dark:text-[#7dd3fc]">
-              +10% vs last month
+              {resolvedCount} of {totalCount} resolved
             </span>
           </div>
         </div>
@@ -810,7 +826,7 @@ export default function OfficerGrievances() {
             {/* Column 1: To Do */}
             <BoardColumn
               title="To do"
-              count={boardColumns.todo.length || 20}
+              count={boardColumns.todo.length}
               cases={boardColumns.todo}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
@@ -820,18 +836,17 @@ export default function OfficerGrievances() {
             {/* Column 2: In Progress */}
             <BoardColumn
               title="In progress"
-              count={boardColumns.inProgress.length || 12}
+              count={boardColumns.inProgress.length}
               cases={boardColumns.inProgress}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
-              featuredScreenshot={true}
               isStaff={isStaff}
             />
 
             {/* Column 3: Under Review */}
             <BoardColumn
               title="Under review"
-              count={boardColumns.underReview.length || 3}
+              count={boardColumns.underReview.length}
               cases={boardColumns.underReview}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
@@ -841,7 +856,7 @@ export default function OfficerGrievances() {
             {/* Column 4: Ready / Resolved */}
             <BoardColumn
               title="Ready"
-              count={boardColumns.ready.length || 102}
+              count={boardColumns.ready.length}
               cases={boardColumns.ready}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelected}
@@ -1046,7 +1061,6 @@ function BoardColumn({
   cases,
   selectedIds,
   onToggleSelect,
-  featuredScreenshot = false,
   isStaff = false,
 }: {
   title: string;
@@ -1054,7 +1068,6 @@ function BoardColumn({
   cases: any[];
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
-  featuredScreenshot?: boolean;
   isStaff?: boolean;
 }) {
   return (
@@ -1071,37 +1084,38 @@ function BoardColumn({
       {/* Column Cards Stack */}
       <div className="space-y-3">
         {cases.length > 0 ? (
-          cases.map((item, idx) => (
+          cases.map((item) => (
             <TaskCard
               key={item.grievance.id}
               item={item}
               isSelected={selectedIds.has(item.grievance.id)}
               onToggleSelect={() => onToggleSelect(item.grievance.id)}
-              hasPreview={featuredScreenshot && idx === 0}
               isStaff={isStaff}
             />
           ))
         ) : (
-          /* High-Fidelity Mock Cards if column is empty so layout matches reference */
-          <MockCardPlaceholder title={title} />
+          /* Genuine empty state: no fake cards, no fake names */
+          <div className="rounded-2xl border border-dashed border-[#dcd6cc] dark:border-[#232730] p-6 text-center">
+            <p className="text-xs text-stone-400 dark:text-stone-500 font-medium">
+              No cases in this stage
+            </p>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// ── TASK CARD COMPONENT (Matching Reference Image) ─────────────────
+// ── TASK CARD COMPONENT ─────────────────
 function TaskCard({
   item,
   isSelected,
   onToggleSelect,
-  hasPreview = false,
   isStaff = false,
 }: {
   item: any;
   isSelected: boolean;
   onToggleSelect: () => void;
-  hasPreview?: boolean;
   isStaff?: boolean;
 }) {
   const g = item.grievance;
@@ -1186,32 +1200,7 @@ function TaskCard({
         {g.description || "Grievance submitted by citizen with tracking reference."}
       </p>
 
-      {/* Optional Card Preview (just like the app concept preview in the reference image) */}
-      {hasPreview ? (
-        <div className="mt-3 overflow-hidden rounded-xl border border-stone-800 dark:border-stone-700 bg-[#121413] p-3 text-white flex items-center justify-center gap-2">
-          <div className="w-1/2 rounded-lg bg-stone-900 p-2 border border-stone-700 text-[9px] shadow-sm">
-            <div className="h-1.5 w-6 rounded-full bg-stone-600 mb-1" />
-            <div className="h-1 w-10 rounded-full bg-stone-700 mb-2" />
-            <div className="grid grid-cols-2 gap-1 text-[8px]">
-              <div className="h-6 rounded bg-stone-800 flex items-center justify-center">
-                📊
-              </div>
-              <div className="h-6 rounded bg-stone-800 flex items-center justify-center">
-                ⚡
-              </div>
-            </div>
-          </div>
-          <div className="w-1/2 rounded-lg bg-stone-800 p-2 border border-stone-700 text-[9px]">
-            <div className="h-1.5 w-8 rounded-full bg-emerald-500 mb-1" />
-            <div className="h-1 w-12 rounded-full bg-stone-600 mb-2" />
-            <div className="h-6 rounded bg-stone-900 flex items-center justify-center text-[8px]">
-              Active App
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* Card Footer: Due Date, Assignee Avatar & Indicators */}
+      {/* Card Footer: Due Date, Priority & Assignee Avatar */}
       <div className="mt-3.5 flex items-center justify-between border-t border-[#f4eee5] dark:border-[#202530] pt-2.5 text-[11px] text-stone-400 dark:text-stone-500">
         <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300 font-medium">
           <Calendar className="h-3 w-3 text-stone-400 dark:text-stone-500" />
@@ -1224,74 +1213,14 @@ function TaskCard({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <span className="flex items-center gap-1 hover:text-stone-600 dark:hover:text-stone-300">
-            <MessageSquare className="h-3 w-3" />
-            <span className="text-[10.5px]">3</span>
-          </span>
-          <span className="flex items-center gap-1 hover:text-stone-600 dark:hover:text-stone-300">
-            <Paperclip className="h-3 w-3" />
-            <span className="text-[10.5px]">1</span>
-          </span>
-          <div className="grid h-5.5 w-5.5 place-items-center rounded-full bg-stone-900 dark:bg-[#202530] text-[10px] font-bold text-white dark:text-stone-200 ring-1 ring-white dark:ring-[#353c4a]">
-            {g.assignedOfficerId ? "O" : "A"}
+          <div className="flex items-center gap-1.5">
+            <PriorityDot priority={g.priority} />
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── MOCK CARD PLACEHOLDER (Ensures all columns look populated like the reference) ──
-function MockCardPlaceholder({ title }: { title: string }) {
-  const isReview = title.includes("review");
-  const isReady = title.includes("Ready");
-  return (
-    <div className="rounded-2xl border border-[#ece6dc] dark:border-[#232730] bg-white dark:bg-[#15181e] p-4 shadow-[0_2px_8px_-2px_rgba(60,50,40,0.03)] dark:shadow-[0_4px_16px_-2px_rgba(0,0,0,0.4)] opacity-90">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-[#ded7fc] dark:bg-[#2a2245] px-2.5 py-0.5 text-[10.5px] font-semibold text-[#493a8c] dark:text-[#c4b5fd]">
-            {isReview ? "Design" : isReady ? "Dev" : "Internal"}
-          </span>
-          <span className="rounded-full bg-[#fdcfba] dark:bg-[#38211a] px-2 py-0.5 text-[10.5px] font-medium text-[#78371e] dark:text-[#fdba74]">
-            {isReview ? "Internal Tasks" : isReady ? "Commercial" : "Planning"}
-          </span>
-        </div>
-        <MoreVertical className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />
-      </div>
-
-      <h4 className="mt-2.5 text-[13px] font-bold text-stone-900 dark:text-stone-100 leading-snug tracking-tight">
-        {isReview
-          ? "Meditation App Concept & Wireframes"
-          : isReady
-            ? "Authorization Module & SSO Setup"
-            : "Analytics Dashboard & Charts"}
-      </h4>
-
-      <p className="mt-1 line-clamp-2 text-[11.5px] leading-relaxed text-stone-500 dark:text-stone-400">
-        {isReview
-          ? "Design a calm, minimalist UI for municipal case workflows with Dark/Light modes."
-          : isReady
-            ? "Implement user session cookies, timing-safe auth and password hashing."
-            : "Design a modern dashboard UI for corporate and campus administration."}
-      </p>
-
-      <div className="mt-3.5 flex items-center justify-between border-t border-[#f4eee5] dark:border-[#202530] pt-2.5 text-[11px] text-stone-400 dark:text-stone-500">
-        <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300 font-medium">
-          <Calendar className="h-3 w-3 text-stone-400 dark:text-stone-500" />
-          <span>25 Sep</span>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <span className="flex items-center gap-1">
-            <MessageSquare className="h-3 w-3" />
-            <span className="text-[10.5px]">3</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <Paperclip className="h-3 w-3" />
-            <span className="text-[10.5px]">1</span>
-          </span>
-          <div className="grid h-5.5 w-5.5 place-items-center rounded-full bg-stone-900 dark:bg-[#202530] text-[10px] font-bold text-white dark:text-stone-200">
-            S
+          <div
+            className="grid h-5.5 w-5.5 place-items-center rounded-full bg-stone-900 dark:bg-[#202530] text-[10px] font-bold text-white dark:text-stone-200 ring-1 ring-white dark:ring-[#353c4a]"
+            title={g.assignedOfficerId ? "Assigned Officer" : "Unassigned"}
+          >
+            {g.assignedOfficerId ? "O" : "A"}
           </div>
         </div>
       </div>

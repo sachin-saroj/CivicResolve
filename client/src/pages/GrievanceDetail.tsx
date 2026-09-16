@@ -31,7 +31,7 @@ export default function GrievanceDetail() {
   const data: any = activeDetail.data;
   const isOfficer = user?.role === "officer" || user?.role === "admin";
   const back = "/manage";
-  const canUpdate = isOfficer && data?.grievance.assignedOfficerId && (user?.role === "admin" || data.grievance.assignedOfficerId === user?.id);
+  const canUpdate = isOfficer && (user?.role === "admin" || (Boolean(data?.grievance.assignedOfficerId) && data.grievance.assignedOfficerId === user?.id));
   const sendProgress = (event: FormEvent) => { event.preventDefault(); progress.mutate({ grievanceId: resolvedId, remarks: remarks.trim() || undefined, actionTaken: actionTaken.trim() || undefined }); };
   const transition = (event: FormEvent) => { event.preventDefault(); if (!nextStatus) return; update.mutate({ grievanceId: resolvedId, nextStatus: nextStatus as any, priority: priority ? priority as any : undefined, remarks: remarks.trim() || undefined, actionTaken: actionTaken.trim() || undefined, resolutionDetails: resolution.trim() || undefined }); };
   if (activeDetail.isLoading) return <div className="space-y-5"><div className="h-5 w-32 animate-pulse rounded bg-slate-200" /><div className="h-28 animate-pulse rounded-[24px] bg-white" /><div className="h-80 animate-pulse rounded-[24px] bg-white" /></div>;

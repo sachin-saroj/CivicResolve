@@ -17,6 +17,7 @@ export default defineConfig({
     include: ["server/**/*.test.ts", "server/**/*.spec.ts", "client/**/*.test.tsx"],
     env: {
       JWT_SECRET: "test-jwt-secret-key-at-least-32-chars-long",
+      DATABASE_URL: "file:./local.db",
     },
   },
 });
