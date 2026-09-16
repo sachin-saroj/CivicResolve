@@ -44,15 +44,20 @@ type NavigationItem = {
   icon: typeof LayoutGrid;
 };
 
-const defaultNav: NavigationItem[] = [
-  { label: "Case Board & Queue", path: "/manage", icon: FolderKanban },
-  { label: "Executive Analytics", path: "/admin", icon: LayoutGrid },
+const officerNav: NavigationItem[] = [
+  { label: "Case Queue & Board", path: "/manage", icon: FolderKanban },
   { label: "Track a Case", path: "/track", icon: Activity },
-  { label: "Submit Case", path: "/cases/new", icon: FilePlus2 },
+  { label: "Submit Grievance", path: "/cases/new", icon: FilePlus2 },
 ];
 
-const adminNav: NavigationItem[] = [
-  { label: "Case Triage", path: "/admin/cases", icon: ClipboardList },
+const adminDirectNav: NavigationItem[] = [
+  { label: "Dashboard & Analytics", path: "/admin", icon: LayoutGrid },
+  { label: "Case Queue & Board", path: "/manage", icon: FolderKanban },
+  { label: "Track a Case", path: "/track", icon: Activity },
+];
+
+const adminManageNav: NavigationItem[] = [
+  { label: "Case Management", path: "/admin/cases", icon: ClipboardList },
   { label: "Departments", path: "/admin/departments", icon: Building2 },
   { label: "Categories", path: "/admin/categories", icon: Tags },
   { label: "Officer Staff", path: "/admin/officers", icon: UserCheck },
@@ -74,16 +79,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       ? session.data
       : null;
 
-  // Filter navigation depending on user role
-  const navigationItems = internalUser
-    ? defaultNav
-    : [
-        { label: "Home", path: "/", icon: LayoutGrid },
-        { label: "Public Board", path: "/manage", icon: FolderKanban },
-        { label: "Track a Case", path: "/track", icon: Activity },
-        { label: "Submit Grievance", path: "/cases/new", icon: FilePlus2 },
-        { label: "Staff Sign-in", path: "/staff/login", icon: ShieldCheck },
-      ];
+  // Filter navigation strictly by role
+  const navigationItems =
+    session.data?.role === "admin"
+      ? adminDirectNav
+      : session.data?.role === "officer"
+        ? officerNav
+        : [
+            { label: "Home", path: "/", icon: LayoutGrid },
+            { label: "Track a Case", path: "/track", icon: Activity },
+            { label: "Submit Grievance", path: "/cases/new", icon: FilePlus2 },
+            { label: "Staff Sign-in", path: "/staff/login", icon: ShieldCheck },
+          ];
 
   const departments = catalog.data?.departments || [
     { id: 1, name: "Public Works" },
@@ -136,7 +143,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </span>
               </div>
               <SidebarMenu className="space-y-1">
-                {adminNav.map((item) => {
+                {adminManageNav.map((item) => {
                   const isActive =
                     location === item.path ||
                     (item.path !== "/" && location.startsWith(`${item.path}/`));
