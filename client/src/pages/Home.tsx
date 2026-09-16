@@ -1,4 +1,5 @@
 import { CivicMark, EditorialHeading, FolderTabCard, PillButton, StatusBadge } from "@/components/CivicPrimitives";
+import CivicDocket from "@/components/CivicDocket";
 import EditorialFooter from "@/components/EditorialFooter";
 import EditorialNavbar from "@/components/EditorialNavbar";
 import { trpc } from "@/lib/trpc";
@@ -280,60 +281,24 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Center Column: Tactile Mobile Case Dossier */}
-              <div className="relative mx-auto max-w-sm w-full">
-                {/* Decorative Frame */}
-                <div className="rounded-[36px] bg-[#0a0a0a] p-3 shadow-[0_20px_50px_rgba(0,0,0,0.2)] border-4 border-neutral-800">
-                  <div className="rounded-[28px] bg-white dark:bg-[#15181e] p-5 overflow-hidden">
-                    {/* Top Status Bar */}
-                    <div className="flex items-center justify-between pb-3 border-b border-[#f0f2f5] dark:border-[#20242f]">
-                      <span className="text-[10px] font-mono font-bold text-[#2563eb] dark:text-[#60a5fa]">
-                        GRV-2026-00482
-                      </span>
-                      <StatusBadge status="in_progress" />
-                    </div>
-
-                    {/* Case Title */}
-                    <div className="mt-4">
-                      <h4 className="font-editorial text-lg font-bold text-[#0a0a0a] dark:text-white leading-snug">
-                        Solar Street Lamp Repair on Main Junction
-                      </h4>
-                      <p className="text-xs text-[#71717a] dark:text-[#a1a1aa] mt-0.5 flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-rose-500" />
-                        8th Cross, Sector 2, Indiranagar
-                      </p>
-                    </div>
-
-                    {/* Real photo preview embedded */}
-                    <div className="mt-3.5 rounded-xl overflow-hidden border border-[#e8eaed] dark:border-[#272f3d] aspect-[16/10] bg-neutral-100 dark:bg-neutral-800">
-                      <img
-                        src="/assets/community_works.jpg"
-                        alt="Civic inspection photo"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-
-                    {/* Progress steps */}
-                    <div className="mt-4 pt-3 border-t border-[#f0f2f5] dark:border-[#20242f] space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-[#71717a] dark:text-[#a1a1aa]">Officer Assigned:</span>
-                        <span className="font-bold text-[#0a0a0a] dark:text-white">Marcus Vance (Public Works)</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-[#71717a] dark:text-[#a1a1aa]">SLA Target Due:</span>
-                        <span className="font-bold text-amber-600 dark:text-amber-400">Within 18 Hours</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <Link href="/track/GRV-2026-00482">
-                        <button className="w-full rounded-xl bg-[#2563eb] text-white py-2.5 text-xs font-bold transition hover:bg-[#1d4ed8]">
-                          Inspect Real Case Dossier →
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+              {/* Center Column: Tactile Signature Civic Docket */}
+              <div className="relative mx-auto max-w-md w-full">
+                <CivicDocket
+                  docket={{
+                    trackingNumber: "GRV-2026-00482",
+                    title: "Solar Street Lamp Repair on Main Junction",
+                    departmentName: "Public Works",
+                    categoryName: "Street Lighting",
+                    status: "in_progress",
+                    priority: "high",
+                    location: "8th Cross, Sector 2, Indiranagar",
+                    assignedOfficerName: "Marcus Vance (Public Works)",
+                    slaDueHours: 72,
+                    latestRemarks: "Central dispatch verified the faulty solar battery unit. Replacement unit scheduled for installation tomorrow morning.",
+                    attachmentUrl: "/assets/community_works.jpg",
+                  }}
+                  interactive
+                />
               </div>
 
               {/* Right Column: Key Guarantees */}
