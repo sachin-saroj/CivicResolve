@@ -256,13 +256,14 @@ export function pretty(value?: string | null) {
   return value.replace(/_/g, " ").replace(/\b\w/g, character => character.toUpperCase());
 }
 
-export function StatusBadge({ status }: { status?: string | null }) {
+export function StatusBadge({ status, size = "md" }: { status?: string | null; size?: "sm" | "md" }) {
   const key = status || "submitted";
   const conf = statusConfig[key] || statusConfig.submitted;
+  const sizeClasses = size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]";
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ring-1 ${conf.bg} ${conf.text} ${conf.ring}`}
+      className={`inline-flex items-center gap-1.5 rounded-full ${sizeClasses} font-semibold tracking-wide ring-1 ${conf.bg} ${conf.text} ${conf.ring}`}
     >
       <i className={`h-1.5 w-1.5 rounded-full ${conf.dot}`} />
       {conf.label}
@@ -500,4 +501,260 @@ export function TactileCard({
     </div>
   );
 }
+
+export function EditorialEyebrow({
+  children,
+  variant = "script",
+  className = "",
+}: {
+  children: ReactNode;
+  variant?: "script" | "caps";
+  className?: string;
+}) {
+  if (variant === "script") {
+    return (
+      <p className={`font-script text-2xl sm:text-3xl text-[#2563eb] dark:text-[#60a5fa] leading-none mb-1 ${className}`}>
+        {children}
+      </p>
+    );
+  }
+  return (
+    <p className={`text-[11px] font-bold uppercase tracking-[0.16em] text-[#71717a] dark:text-[#a1a1aa] mb-2 ${className}`}>
+      {children}
+    </p>
+  );
+}
+
+export function EditorialCard({
+  children,
+  className = "",
+  hover = true,
+}: {
+  children: ReactNode;
+  className?: string;
+  hover?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-3xl bg-white dark:bg-[#12151b] border border-[#e4e4e7] dark:border-[#20242f] p-6 sm:p-8 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] ${
+        hover ? "transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.08)]" : ""
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function SoftCard({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-2xl bg-[#f2f2f2] dark:bg-[#161922] border border-[#e8eaed] dark:border-[#20242f] p-5 sm:p-6 ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function ElevatedCard({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-3xl bg-white dark:bg-[#12151b] border border-[#d4d4d8] dark:border-[#272f3d] p-6 sm:p-8 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.1)] ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function DocumentCard({
+  docketNumber,
+  title,
+  department,
+  status,
+  timestamp,
+  children,
+  className = "",
+}: {
+  docketNumber: string;
+  title: string;
+  department?: string;
+  status?: string;
+  timestamp?: string;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`relative rounded-2xl bg-white dark:bg-[#12151b] border border-[#e4e4e7] dark:border-[#20242f] p-5 sm:p-6 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.04)] transition hover:shadow-md ${className}`}
+    >
+      <div className="flex items-center justify-between border-b border-[#f0f0f2] dark:border-[#1d222c] pb-3 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-[#2563eb]" />
+          <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[#71717a] dark:text-[#a1a1aa]">
+            {docketNumber}
+          </span>
+        </div>
+        {status ? <StatusBadge status={status} size="sm" /> : null}
+      </div>
+      <h4 className="font-editorial text-lg sm:text-xl font-semibold text-[#0a0a0a] dark:text-white leading-snug">
+        {title}
+      </h4>
+      {department || timestamp ? (
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[#71717a] dark:text-[#a1a1aa]">
+          {department ? <span>{department}</span> : null}
+          {department && timestamp ? <span>•</span> : null}
+          {timestamp ? <span>{timestamp}</span> : null}
+        </div>
+      ) : null}
+      {children ? <div className="mt-4">{children}</div> : null}
+    </div>
+  );
+}
+
+export function FeatureCard({
+  icon,
+  eyebrow,
+  title,
+  description,
+  accent = "blue",
+  className = "",
+}: {
+  icon?: ReactNode;
+  eyebrow?: string;
+  title: string;
+  description: string;
+  accent?: "blue" | "navy" | "teal" | "orange" | "maroon" | "green";
+  className?: string;
+}) {
+  const accentColors = {
+    blue: "text-[#2563eb] bg-[#eff6ff] dark:bg-[#1e293b]",
+    navy: "text-[#182454] bg-[#f0f2f8] dark:bg-[#161a28]",
+    teal: "text-[#0d4e60] bg-[#eef8f8] dark:bg-[#122428]",
+    orange: "text-[#f97f07] bg-[#fff7ed] dark:bg-[#2c1d12]",
+    maroon: "text-[#5c0f08] bg-[#fdf2f2] dark:bg-[#2a1315]",
+    green: "text-[#4caf6d] bg-[#f0fdf4] dark:bg-[#14261a]",
+  }[accent];
+
+  return (
+    <div
+      className={`rounded-3xl bg-white dark:bg-[#12151b] border border-[#e4e4e7] dark:border-[#20242f] p-6 sm:p-8 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)] transition hover:-translate-y-1 hover:shadow-md ${className}`}
+    >
+      {icon ? (
+        <div className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl ${accentColors}`}>
+          {icon}
+        </div>
+      ) : null}
+      {eyebrow ? (
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[#71717a] dark:text-[#a1a1aa] mb-1.5">
+          {eyebrow}
+        </p>
+      ) : null}
+      <h3 className="font-editorial text-2xl font-semibold text-[#0a0a0a] dark:text-white tracking-tight">
+        {title}
+      </h3>
+      <p className="mt-2.5 text-sm leading-relaxed text-[#52525b] dark:text-[#a1a1aa]">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+export function ImageFrame({
+  src,
+  alt,
+  caption,
+  rotation = "none",
+  className = "",
+}: {
+  src: string;
+  alt: string;
+  caption?: string;
+  rotation?: "left" | "right" | "none";
+  className?: string;
+}) {
+  const rotClass = {
+    left: "-rotate-1 hover:rotate-0",
+    right: "rotate-1 hover:rotate-0",
+    none: "",
+  }[rotation];
+
+  return (
+    <figure className={`group relative transition-transform duration-300 ${rotClass} ${className}`}>
+      <div className="overflow-hidden rounded-3xl border-4 border-white dark:border-[#1c212a] bg-white dark:bg-[#12151b] shadow-[0_16px_40px_-8px_rgba(0,0,0,0.12)]">
+        <img src={src} alt={alt} className="w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+      </div>
+      {caption ? (
+        <figcaption className="mt-3 text-center text-xs font-mono uppercase tracking-widest text-[#71717a] dark:text-[#a1a1aa]">
+          {caption}
+        </figcaption>
+      ) : null}
+    </figure>
+  );
+}
+
+export function EditorialSection({
+  children,
+  className = "",
+  container = "default",
+}: {
+  children: ReactNode;
+  className?: string;
+  container?: "default" | "narrow" | "wide" | "full";
+}) {
+  const containerClass = {
+    narrow: "max-w-4xl mx-auto px-4 sm:px-6",
+    default: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8",
+    wide: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    full: "w-full px-4 sm:px-6 lg:px-8",
+  }[container];
+
+  return (
+    <section className={`py-14 sm:py-20 lg:py-24 ${className}`}>
+      <div className={containerClass}>{children}</div>
+    </section>
+  );
+}
+
+export function EmptyState({
+  title,
+  description,
+  action,
+  icon,
+  className = "",
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+  icon?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-3xl border border-dashed border-[#d4d4d8] dark:border-[#27272a] bg-white/60 dark:bg-[#12151b]/60 backdrop-blur-xs p-8 sm:p-12 text-center ${className}`}
+    >
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eff6ff] dark:bg-[#1e293b] text-[#2563eb] dark:text-[#60a5fa]">
+        {icon || <FileText className="h-6 w-6" />}
+      </div>
+      <h3 className="font-editorial text-2xl font-semibold text-[#0a0a0a] dark:text-white">
+        {title}
+      </h3>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#52525b] dark:text-[#a1a1aa]">
+        {description}
+      </p>
+      {action ? <div className="mt-6 flex justify-center">{action}</div> : null}
+    </div>
+  );
+}
+
 
