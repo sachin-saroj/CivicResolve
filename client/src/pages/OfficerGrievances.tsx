@@ -120,7 +120,24 @@ export default function OfficerGrievances() {
   const isStaff =
     session.data?.role === "officer" || session.data?.role === "admin";
 
-  const [viewMode, setViewMode] = useState<ViewMode>("board");
+  // Default to list view on viewports < 768px to prevent horizontal kanban scroll fatigue,
+  // while preserving the officer's intentional manual selection when toggled.
+  const [userSelectedMode, setUserSelectedMode] = useState<ViewMode | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const viewMode = userSelectedMode ?? (isMobile ? "list" : "board");
+  const setViewMode = (mode: ViewMode) => setUserSelectedMode(mode);
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
