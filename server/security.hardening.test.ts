@@ -1,3 +1,6 @@
+import express from "express";
+import { createServer } from "node:http";
+import { registerStorageProxy } from "./_core/storageProxy";
 import { describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 import { isForeignKeysEnabled } from "./db";
@@ -236,6 +239,97 @@ describe("Phase 29 — Critical Security & Storage Hardening", () => {
       const adminCaller = appRouter.createCaller(adminContext);
       const users = await adminCaller.admin.users();
       expect(Array.isArray(users)).toBe(true);
+    });
+
+    it("strictly omits passwordHash from auth.me, admin.users, and admin.officers", async () => {
+      // 1. auth.me
+      const officerCaller = appRouter.createCaller(officerContext);
+      const me = await officerCaller.auth.me();
+      expect(me).toBeDefined();
+      expect((me as any).passwordHash).toBeUndefined();
+
+      // 2. admin.users
+      const adminCaller = appRouter.createCaller(adminContext);
+      const allUsers = await adminCaller.admin.users();
+      expect(allUsers.length).toBeGreaterThan(0);
+      for (const u of allUsers) {
+        expect((u as any).passwordHash).toBeUndefined();
+      }
+
+      // 3. admin.officers
+      const allOfficers = await adminCaller.admin.officers();
+      for (const o of allOfficers) {
+        expect((o.user as any).passwordHash).toBeUndefined();
+      }
+    });
+
+    it("generates authorized public attachment URLs with tracking parameter in portal.detail", async () => {
+      const caller = appRouter.createCaller(anonymousContext);
+      const created = await caller.portal.create({
+        title: "Pothole with photo attachment verification",
+        departmentId: 1,
+        categoryId: 1,
+        description: "Street repair needed with photographic documentation.",
+      });
+
+      const validPdf = Buffer.from("%PDF-1.4 test evidence document");
+      await caller.portal.uploadAttachment({
+        trackingNumber: created.trackingNumber,
+        fileName: "pothole_doc.pdf",
+        mimeType: "application/pdf",
+        fileData: validPdf.toString("base64"),
+      });
+
+      const detail = await caller.portal.detail({ trackingNumber: created.trackingNumber });
+      expect(detail.attachments.length).toBe(1);
+      const att = detail.attachments[0];
+      expect(att.fileUrl).toContain(`/api/attachments/`);
+      expect(att.fileUrl).toContain(`trackingNumber=${encodeURIComponent(created.trackingNumber)}`);
+    });
+
+    it("handles public attachment downloads via trackingNumber and rejects unauthorized requests", async () => {
+      const app = express();
+      registerStorageProxy(app);
+      const server = createServer(app);
+      await new Promise<void>((resolve) => server.listen(0, resolve));
+      const port = (server.address() as any).port;
+
+      try {
+        const caller = appRouter.createCaller(anonymousContext);
+        const created = await caller.portal.create({
+          title: "Leaking pipe attachment access test",
+          departmentId: 1,
+          categoryId: 1,
+          description: "Water pipe leaking heavily outside building.",
+        });
+
+        const validPdf = Buffer.from("%PDF-1.4 authenticated evidence document");
+        await caller.portal.uploadAttachment({
+          trackingNumber: created.trackingNumber,
+          fileName: "pipe_evidence.pdf",
+          mimeType: "application/pdf",
+          fileData: validPdf.toString("base64"),
+        });
+
+        const detail = await caller.portal.detail({ trackingNumber: created.trackingNumber });
+        const att = detail.attachments[0];
+
+        // 1. Download without trackingNumber -> 401
+        const unauthRes = await fetch(`http://localhost:${port}/api/attachments/${encodeURIComponent(att.fileName)}`);
+        expect(unauthRes.status).toBe(401);
+
+        // 2. Download with wrong trackingNumber -> 403
+        const wrongKeyRes = await fetch(`http://localhost:${port}${att.fileUrl.replace(created.trackingNumber, "GRV-2026-99999")}`);
+        expect(wrongKeyRes.status).toBe(403);
+
+        // 3. Download with correct trackingNumber -> 200
+        const successRes = await fetch(`http://localhost:${port}${att.fileUrl}`);
+        expect(successRes.status).toBe(200);
+        const text = await successRes.text();
+        expect(text).toContain("%PDF-1.4");
+      } finally {
+        server.close();
+      }
     });
   });
 });
