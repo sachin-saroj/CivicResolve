@@ -106,6 +106,8 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
@@ -113,3 +115,7 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# File uploads (local storage)
+uploads/*
+!uploads/.gitkeep

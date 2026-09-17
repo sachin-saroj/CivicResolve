@@ -1,4 +1,5 @@
 import {
+  index,
   integer,
   sqliteTable,
   text,
@@ -30,7 +31,7 @@ export const users = sqliteTable("users", {
   updatedAt: integer("updatedAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
   lastSignedIn: integer("lastSignedIn", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
   passwordHash: text("passwordHash"),
-  departmentId: integer("departmentId").references(() => departments.id, { onDelete: "set null" }),
+  departmentId: integer("departmentId").references(() => departments.id),
   active: integer("active").default(1).notNull(),
 });
 
@@ -50,7 +51,7 @@ export const grievanceCategories = sqliteTable("grievanceCategories", {
   description: text("description"),
   departmentId: integer("departmentId")
     .notNull()
-    .references(() => departments.id, { onDelete: "restrict" }),
+    .references(() => departments.id, { onDelete: "cascade" }),
   status: text("status", { enum: entityStatusValues }).default("active").notNull(),
   createdAt: integer("createdAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
   updatedAt: integer("updatedAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
@@ -103,7 +104,13 @@ export const grievances = sqliteTable("grievances", {
   closedAt: integer("closedAt", { mode: "timestamp" }),
   dueAt: integer("dueAt", { mode: "timestamp" }),
   escalatedAt: integer("escalatedAt", { mode: "timestamp" }),
-});
+}, table => ({
+  deptStatusIdx: index("idx_grievances_department_status").on(table.departmentId, table.status),
+  officerIdx: index("idx_grievances_assigned_officer").on(table.assignedOfficerId),
+  userIdx: index("idx_grievances_user").on(table.userId),
+  dueAtIdx: index("idx_grievances_due_at").on(table.dueAt),
+  updatedAtIdx: index("idx_grievances_updated_at").on(table.updatedAt),
+}));
 
 export const grievanceHistory = sqliteTable("grievanceHistory", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -119,7 +126,9 @@ export const grievanceHistory = sqliteTable("grievanceHistory", {
     .notNull()
     .references(() => users.id, { onDelete: "restrict" }),
   createdAt: integer("createdAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
-});
+}, table => ({
+  grievanceIdx: index("idx_history_grievance").on(table.grievanceId),
+}));
 
 export const attachments = sqliteTable("attachments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -135,7 +144,9 @@ export const attachments = sqliteTable("attachments", {
     .notNull()
     .references(() => users.id, { onDelete: "restrict" }),
   uploadedAt: integer("uploadedAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
-});
+}, table => ({
+  grievanceIdx: index("idx_attachments_grievance").on(table.grievanceId),
+}));
 
 export const feedback = sqliteTable("feedback", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -164,9 +175,28 @@ export const notifications = sqliteTable("notifications", {
   type: text("type").notNull(),
   readAt: integer("readAt", { mode: "timestamp" }),
   createdAt: integer("createdAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
-});
+}, table => ({
+  userReadIdx: index("idx_notifications_user_read").on(table.userId, table.readAt),
+}));
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-export type GrievanceStatus = (typeof grievanceStatusValues)[number];
-export type GrievancePriority = (typeof priorityValues)[number];
+export type Department = typeof departments.$inferSelect;
+export type InsertDepartment = typeof departments.$inferInsert;
+export type GrievanceCategory = typeof grievanceCategories.$inferSelect;
+export type InsertGrievanceCategory = typeof grievanceCategories.$inferInsert;
+export type OfficerProfile = typeof officerProfiles.$inferSelect;
+export type InsertOfficerProfile = typeof officerProfiles.$inferInsert;
+export type Grievance = typeof grievances.$inferSelect;
+export type InsertGrievance = typeof grievances.$inferInsert;
+export type GrievanceHistory = typeof grievanceHistory.$inferSelect;
+export type InsertGrievanceHistory = typeof grievanceHistory.$inferInsert;
+export type Attachment = typeof attachments.$inferSelect;
+export type InsertAttachment = typeof attachments.$inferInsert;
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = typeof feedback.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+export type GrievancePriority = typeof priorityValues[number];
+export type GrievanceStatus = typeof grievanceStatusValues[number];

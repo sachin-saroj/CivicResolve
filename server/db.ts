@@ -22,6 +22,9 @@ let _tablesInitialized = false;
 
 async function initTables(client: ReturnType<typeof createClient>) {
   if (_tablesInitialized) return;
+  await client.execute("PRAGMA foreign_keys = ON;");
+  await client.execute("PRAGMA journal_mode = WAL;");
+  await client.execute("PRAGMA busy_timeout = 5000;");
   await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,6 +139,15 @@ async function initTables(client: ReturnType<typeof createClient>) {
       readAt INTEGER,
       createdAt INTEGER NOT NULL
     );
+
+    CREATE INDEX IF NOT EXISTS idx_grievances_department_status ON grievances(departmentId, status);
+    CREATE INDEX IF NOT EXISTS idx_grievances_assigned_officer ON grievances(assignedOfficerId);
+    CREATE INDEX IF NOT EXISTS idx_grievances_user ON grievances(userId);
+    CREATE INDEX IF NOT EXISTS idx_grievances_due_at ON grievances(dueAt);
+    CREATE INDEX IF NOT EXISTS idx_grievances_updated_at ON grievances(updatedAt);
+    CREATE INDEX IF NOT EXISTS idx_history_grievance ON grievanceHistory(grievanceId);
+    CREATE INDEX IF NOT EXISTS idx_attachments_grievance ON attachments(grievanceId);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(userId, readAt);
   `);
   _tablesInitialized = true;
 }
@@ -145,6 +157,9 @@ export async function getDb() {
     try {
       const url = process.env.DATABASE_URL || "file:./local.db";
       const client = createClient({ url });
+      await client.execute("PRAGMA foreign_keys = ON;");
+      await client.execute("PRAGMA journal_mode = WAL;");
+      await client.execute("PRAGMA busy_timeout = 5000;");
       await initTables(client);
       _db = drizzle(client);
       await ensureInitialCatalog();
@@ -154,6 +169,23 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function isForeignKeysEnabled(): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    const result = await db.run(sql`PRAGMA foreign_keys;`);
+    const rows = (result as any)?.rows;
+    if (Array.isArray(rows) && rows.length > 0) {
+      const first = rows[0];
+      if (Array.isArray(first)) return first[0] === 1;
+      if (typeof first === "object" && first !== null) return Object.values(first)[0] === 1;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -344,59 +376,91 @@ export async function createGrievanceRecord(input: {
   const dueAt = new Date(Date.now() + department[0].slaHours * 60 * 60 * 1000);
 
   const year = new Date().getUTCFullYear();
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const countResult = await db
-      .select({ total: sql<number>`count(*)` })
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const latestRows = await db
+      .select({ trackingNumber: grievances.trackingNumber })
       .from(grievances)
-      .where(like(grievances.trackingNumber, `GRV-${year}-%`));
-    const serial = Number(countResult[0]?.total ?? 0) + 1 + attempt;
+      .where(like(grievances.trackingNumber, `GRV-${year}-%`))
+      .orderBy(desc(grievances.trackingNumber))
+      .limit(1);
+
+    let maxSerial = 0;
+    if (latestRows[0]?.trackingNumber) {
+      const parts = latestRows[0].trackingNumber.split("-");
+      const parsed = parseInt(parts[2], 10);
+      if (!isNaN(parsed)) maxSerial = parsed;
+    }
+    const serial = maxSerial + 1 + attempt;
     const trackingNumber = `GRV-${year}-${String(serial).padStart(5, "0")}`;
     try {
-      const now = new Date();
-      await db.insert(grievances).values({
-        trackingNumber,
-        userId: input.userId,
-        categoryId: input.categoryId,
-        departmentId: input.departmentId,
-        title: input.title,
-        description: input.description,
-        location: input.location || null,
-        contactEmail: input.contactEmail?.toLowerCase() || null,
-        priority: "medium",
-        status: "submitted",
-        dueAt,
-        createdAt: now,
-        updatedAt: now,
-      });
+      return await db.transaction(async (tx) => {
+        const now = new Date();
+        await tx.insert(grievances).values({
+          trackingNumber,
+          userId: input.userId,
+          categoryId: input.categoryId,
+          departmentId: input.departmentId,
+          title: input.title,
+          description: input.description,
+          location: input.location || null,
+          contactEmail: input.contactEmail?.toLowerCase() || null,
+          priority: "medium",
+          status: "submitted",
+          dueAt,
+          createdAt: now,
+          updatedAt: now,
+        });
 
-      const inserted = await db.select().from(grievances).where(eq(grievances.trackingNumber, trackingNumber)).limit(1);
-      const grievanceId = inserted[0].id;
+        const inserted = await tx.select().from(grievances).where(eq(grievances.trackingNumber, trackingNumber)).limit(1);
+        const grievanceId = inserted[0].id;
 
-      await db.insert(grievanceHistory).values({
-        grievanceId,
-        previousStatus: null,
-        newStatus: "submitted",
-        activityType: "submitted",
-        remarks: "Grievance received through the citizen portal.",
-        changedByUserId: input.userId,
-        createdAt: now,
+        await tx.insert(grievanceHistory).values({
+          grievanceId,
+          previousStatus: null,
+          newStatus: "submitted",
+          activityType: "submitted",
+          remarks: "Grievance received through the citizen portal.",
+          changedByUserId: input.userId,
+          createdAt: now,
+        });
+
+        await tx.insert(notifications).values({
+          userId: input.userId,
+          grievanceId,
+          title: "Grievance submitted",
+          message: `Your grievance ${trackingNumber} has been received.`,
+          type: "submitted",
+          createdAt: now,
+        });
+
+        if (input.contactEmail) {
+          await tx.insert(notifications).values({
+            userId: input.userId,
+            grievanceId,
+            title: "Email update submitted",
+            message: `Logged email notification attempt for ${input.contactEmail} regarding ${trackingNumber}.`,
+            type: "email_attempt",
+            createdAt: now,
+          });
+        }
+
+        return { id: grievanceId, trackingNumber };
       });
-      await db.insert(notifications).values({
-        userId: input.userId,
-        grievanceId,
-        title: "Grievance submitted",
-        message: `Your grievance ${trackingNumber} has been received.`,
-        type: "submitted",
-        createdAt: now,
-      });
-      if (input.contactEmail) {
-        await db.insert(notifications).values({ userId: input.userId, grievanceId, title: "Email update submitted", message: `Logged email notification attempt for ${input.contactEmail} regarding ${trackingNumber}.`, type: "email_attempt", createdAt: now });
-      }
-      return { id: grievanceId, trackingNumber };
     } catch (error: any) {
-      if (!error?.message?.includes("UNIQUE constraint failed") && error?.code !== "ER_DUP_ENTRY" && error?.errno !== 1062) {
-        throw error;
+      if (
+        error?.message?.includes("UNIQUE constraint failed") ||
+        error?.message?.includes("trackingNumber") ||
+        error?.message?.includes("SQLITE_BUSY") ||
+        error?.message?.includes("database is locked") ||
+        error?.code === "SQLITE_BUSY" ||
+        error?.code === "SQLITE_CONSTRAINT" ||
+        error?.code === "ER_DUP_ENTRY" ||
+        error?.errno === 1062
+      ) {
+        await new Promise(r => setTimeout(r, 60 * (attempt + 1)));
+        continue;
       }
+      throw error;
     }
   }
   throw new Error("Could not generate a unique tracking ID. Please try again.");
@@ -612,13 +676,15 @@ export async function updateGrievancePriorityBatch(input: {
 }) {
   const database = await getDb();
   if (!database) throw new Error("Database unavailable");
-  const current = await database.select().from(grievances).where(inArray(grievances.id, input.grievanceIds));
-  if (current.length !== input.grievanceIds.length) throw new Error("One or more selected grievances could not be found.");
-  const effects = buildBulkPrioritySideEffects(current, input.priority, input.changedByUserId);
-  const now = new Date();
-  await database.update(grievances).set({ priority: input.priority, updatedAt: now }).where(inArray(grievances.id, input.grievanceIds));
-  for (const h of effects.history) await database.insert(grievanceHistory).values({ ...h, createdAt: now });
-  for (const n of effects.notifications) await database.insert(notifications).values({ ...n, createdAt: now });
+  return database.transaction(async (tx) => {
+    const current = await tx.select().from(grievances).where(inArray(grievances.id, input.grievanceIds));
+    if (current.length !== input.grievanceIds.length) throw new Error("One or more selected grievances could not be found.");
+    const effects = buildBulkPrioritySideEffects(current, input.priority, input.changedByUserId);
+    const now = new Date();
+    await tx.update(grievances).set({ priority: input.priority, updatedAt: now }).where(inArray(grievances.id, input.grievanceIds));
+    for (const h of effects.history) await tx.insert(grievanceHistory).values({ ...h, createdAt: now });
+    for (const n of effects.notifications) await tx.insert(notifications).values({ ...n, createdAt: now });
+  });
 }
 
 export async function updateGrievanceWorkflow(input: {
@@ -631,43 +697,52 @@ export async function updateGrievanceWorkflow(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
-  const current = await db.select().from(grievances).where(eq(grievances.id, input.grievanceId)).limit(1);
-  if (!current[0]) throw new Error("Grievance not found.");
-  const now = new Date();
-  await db
-    .update(grievances)
-    .set({
-      status: input.nextStatus,
-      resolutionDetails: input.resolutionDetails || current[0].resolutionDetails,
-      resolvedAt: input.nextStatus === "resolved" ? now : current[0].resolvedAt,
-      closedAt: input.nextStatus === "closed" ? now : current[0].closedAt,
-      updatedAt: now,
-    })
-    .where(eq(grievances.id, input.grievanceId));
+  return db.transaction(async (tx) => {
+    const current = await tx.select().from(grievances).where(eq(grievances.id, input.grievanceId)).limit(1);
+    if (!current[0]) throw new Error("Grievance not found.");
+    const now = new Date();
+    await tx
+      .update(grievances)
+      .set({
+        status: input.nextStatus,
+        resolutionDetails: input.resolutionDetails || current[0].resolutionDetails,
+        resolvedAt: input.nextStatus === "resolved" ? now : current[0].resolvedAt,
+        closedAt: input.nextStatus === "closed" ? now : current[0].closedAt,
+        updatedAt: now,
+      })
+      .where(eq(grievances.id, input.grievanceId));
 
-  await db.insert(grievanceHistory).values({
-    grievanceId: input.grievanceId,
-    previousStatus: current[0].status,
-    newStatus: input.nextStatus,
-    activityType: "status_change",
-    remarks: input.remarks || null,
-    actionTaken: input.actionTaken || null,
-    changedByUserId: input.changedByUserId,
-    createdAt: now,
+    await tx.insert(grievanceHistory).values({
+      grievanceId: input.grievanceId,
+      previousStatus: current[0].status,
+      newStatus: input.nextStatus,
+      activityType: "status_change",
+      remarks: input.remarks || null,
+      actionTaken: input.actionTaken || null,
+      changedByUserId: input.changedByUserId,
+      createdAt: now,
+    });
+
+    await tx.insert(notifications).values({
+      userId: current[0].userId,
+      grievanceId: input.grievanceId,
+      title: `Grievance ${input.nextStatus.replace("_", " ")}`,
+      message: `${current[0].trackingNumber} has been updated to ${input.nextStatus.replace("_", " ")}.`,
+      type: input.nextStatus,
+      createdAt: now,
+    });
+
+    if (current[0].contactEmail) {
+      await tx.insert(notifications).values({
+        userId: current[0].userId,
+        grievanceId: input.grievanceId,
+        title: `Email update ${input.nextStatus}`,
+        message: `Logged email notification attempt for ${current[0].contactEmail} regarding ${current[0].trackingNumber}.`,
+        type: "email_attempt",
+        createdAt: now,
+      });
+    }
   });
-
-  await db.insert(notifications).values({
-    userId: current[0].userId,
-    grievanceId: input.grievanceId,
-    title: `Grievance ${input.nextStatus.replace("_", " ")}`,
-    message: `${current[0].trackingNumber} has been updated to ${input.nextStatus.replace("_", " ")}.`,
-    type: input.nextStatus,
-    createdAt: now,
-  });
-
-  if (current[0].contactEmail) {
-    await logEmailNotificationAttempt({ userId: current[0].userId, grievanceId: input.grievanceId, recipient: current[0].contactEmail, event: input.nextStatus, trackingNumber: current[0].trackingNumber });
-  }
 }
 
 export async function addGrievanceProgress(input: {
@@ -678,30 +753,128 @@ export async function addGrievanceProgress(input: {
 }) {
   const database = await getDb();
   if (!database) throw new Error("Database unavailable");
-  const current = await database.select().from(grievances).where(eq(grievances.id, input.grievanceId)).limit(1);
-  if (!current[0]) throw new Error("Grievance not found.");
-  const now = new Date();
-  await database.insert(grievanceHistory).values({
-    grievanceId: input.grievanceId,
-    previousStatus: current[0].status,
-    newStatus: current[0].status,
-    activityType: "progress_update",
-    remarks: input.remarks || null,
-    actionTaken: input.actionTaken || null,
-    changedByUserId: input.changedByUserId,
-    createdAt: now,
+  return database.transaction(async (tx) => {
+    const current = await tx.select().from(grievances).where(eq(grievances.id, input.grievanceId)).limit(1);
+    if (!current[0]) throw new Error("Grievance not found.");
+    const now = new Date();
+    await tx.insert(grievanceHistory).values({
+      grievanceId: input.grievanceId,
+      previousStatus: current[0].status,
+      newStatus: current[0].status,
+      activityType: "progress_update",
+      remarks: input.remarks || null,
+      actionTaken: input.actionTaken || null,
+      changedByUserId: input.changedByUserId,
+      createdAt: now,
+    });
+    await tx.insert(notifications).values({
+      userId: current[0].userId,
+      grievanceId: input.grievanceId,
+      title: "Progress update added",
+      message: `${current[0].trackingNumber} has a new progress update from the responsible department.`,
+      type: "progress_update",
+      createdAt: now,
+    });
+    if (current[0].contactEmail) {
+      await tx.insert(notifications).values({
+        userId: current[0].userId,
+        grievanceId: input.grievanceId,
+        title: "Email update progress",
+        message: `Logged email notification attempt for ${current[0].contactEmail} regarding ${current[0].trackingNumber}.`,
+        type: "email_attempt",
+        createdAt: now,
+      });
+    }
   });
-  await database.insert(notifications).values({
-    userId: current[0].userId,
-    grievanceId: input.grievanceId,
-    title: "Progress update added",
-    message: `${current[0].trackingNumber} has a new progress update from the responsible department.`,
-    type: "progress_update",
-    createdAt: now,
+}
+
+export async function assignGrievanceOfficer(input: {
+  grievanceId: number;
+  officerId: number;
+  changedByUserId: number;
+}) {
+  const database = await getDb();
+  if (!database) throw new Error("Database unavailable");
+
+  return database.transaction(async (tx) => {
+    const detailRows = await tx.select().from(grievances).where(eq(grievances.id, input.grievanceId)).limit(1);
+    if (!detailRows[0]) throw new Error("Grievance not found.");
+    const current = detailRows[0];
+
+    const profile = await tx.select().from(officerProfiles).where(eq(officerProfiles.userId, input.officerId)).limit(1);
+    if (!profile[0] || profile[0].departmentId !== current.departmentId) {
+      throw new Error("Choose an available officer from the grievance department.");
+    }
+
+    const now = new Date();
+    const currentStatus = current.status;
+
+    if (currentStatus === "submitted") {
+      await tx.insert(grievanceHistory).values({
+        grievanceId: input.grievanceId,
+        previousStatus: "submitted",
+        newStatus: "acknowledged",
+        activityType: "status_change",
+        remarks: "Grievance acknowledged for department review.",
+        changedByUserId: input.changedByUserId,
+        createdAt: now,
+      });
+      await tx.update(grievances).set({ assignedOfficerId: input.officerId, status: "assigned", updatedAt: now }).where(eq(grievances.id, input.grievanceId));
+      await tx.insert(grievanceHistory).values({
+        grievanceId: input.grievanceId,
+        previousStatus: "acknowledged",
+        newStatus: "assigned",
+        activityType: "status_change",
+        remarks: "Grievance assigned to the responsible officer.",
+        changedByUserId: input.changedByUserId,
+        createdAt: now,
+      });
+    } else if (currentStatus === "acknowledged") {
+      await tx.update(grievances).set({ assignedOfficerId: input.officerId, status: "assigned", updatedAt: now }).where(eq(grievances.id, input.grievanceId));
+      await tx.insert(grievanceHistory).values({
+        grievanceId: input.grievanceId,
+        previousStatus: "acknowledged",
+        newStatus: "assigned",
+        activityType: "status_change",
+        remarks: "Grievance assigned to the responsible officer.",
+        changedByUserId: input.changedByUserId,
+        createdAt: now,
+      });
+    } else {
+      await tx.update(grievances).set({ assignedOfficerId: input.officerId, updatedAt: now }).where(eq(grievances.id, input.grievanceId));
+      await tx.insert(grievanceHistory).values({
+        grievanceId: input.grievanceId,
+        previousStatus: currentStatus,
+        newStatus: currentStatus,
+        activityType: "progress_update",
+        remarks: "Responsible officer reassigned by administrator.",
+        changedByUserId: input.changedByUserId,
+        createdAt: now,
+      });
+    }
+
+    await tx.insert(notifications).values({
+      userId: input.officerId,
+      grievanceId: input.grievanceId,
+      title: "New grievance assignment",
+      message: `You have been assigned ${current.trackingNumber}.`,
+      type: "assigned",
+      createdAt: now,
+    });
+
+    if (current.contactEmail) {
+      await tx.insert(notifications).values({
+        userId: current.userId,
+        grievanceId: input.grievanceId,
+        title: "Email update assignment",
+        message: `Logged email notification attempt for ${current.contactEmail} regarding ${current.trackingNumber}.`,
+        type: "email_attempt",
+        createdAt: now,
+      });
+    }
+
+    return { success: true };
   });
-  if (current[0].contactEmail) {
-    await logEmailNotificationAttempt({ userId: current[0].userId, grievanceId: input.grievanceId, recipient: current[0].contactEmail, event: "progress", trackingNumber: current[0].trackingNumber });
-  }
 }
 
 export async function getAdminDashboardData() {
