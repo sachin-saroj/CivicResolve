@@ -13,13 +13,15 @@
 [![tRPC v11](https://img.shields.io/badge/tRPC-v11.6-2596BE?style=flat-square&logo=trpc&logoColor=white)](https://trpc.io/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.44-C5F74F?style=flat-square&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.1-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Tests Passing](https://img.shields.io/badge/Vitest-50_Passing-10B981?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Tests Passing](https://img.shields.io/badge/Vitest-61_Passing-10B981?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Security Hardened](https://img.shields.io/badge/Security-Hardened-blue?style=flat-square)](docs/PHASE-29-SECURITY-HARDENING-REPORT.md)
 [![License MIT](https://img.shields.io/badge/License-MIT-6366F1?style=flat-square)](LICENSE)
 
 [Architecture Overview](#-architecture--system-design) •
 [Core Capabilities](#-core-capabilities) •
 [Workflow & SLA](#-grievance-lifecycle--sla-engine) •
 [Quick Start](#-quick-start--installation) •
+[Docker Deployment](#-docker--container-deployment) •
 [API & Route Map](#-routes--access-boundaries) •
 [Academic & Viva Guide](#-academic--viva-presentation-guide)
 
@@ -231,8 +233,8 @@ stateDiagram-v2
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/sachin-saroj/clg-project.git
-cd clg-project
+git clone https://github.com/sachin-saroj/CivicResolve.git
+cd CivicResolve
 ```
 
 ### 2. Install Dependencies
@@ -246,26 +248,27 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-The system runs out of the box with zero external configuration using an embedded SQLite database (`local.db`):
+Configure your secrets in `.env`:
 ```env
-# Database connection string (defaults to local SQLite file:./local.db)
-DATABASE_URL=file:./local.db
-
-# JWT session secret key (minimum 32 characters)
-JWT_SECRET=civic-resolve-super-secret-key-must-be-32-chars-long-2026
-
-# Server Port
+NODE_ENV=development
 PORT=3000
+HOST=0.0.0.0
+DATABASE_URL=file:./local.db
+JWT_SECRET=use-a-secure-random-key-at-least-32-characters-long
+SESSION_SECRET=use-a-secure-random-key-at-least-32-characters-long
+UPLOAD_DIR=./uploads
 ```
 
-### 4. Seed the Default Administrator Account
-Execute the automated administrator seeding script:
+### 4. Seed Local Demo Accounts
+Execute the automated administrator and departmental officer seeding script:
 ```bash
 pnpm run seed:admin
 ```
-> **Default Admin Credentials:**
-> - **Email:** `admin@civicresolve.internal`
-> - **Password:** `Admin@CivicResolve2026!`
+> **Verified Demo Accounts for Testing & Presentation:**
+> - **Administrator:** `admin@civicresolve.internal` / `Admin@CivicResolve2026!`
+> - **Public Works Officer:** `officer.works@civicresolve.internal` / `Officer@CivicResolve2026!`
+> - **Water & Sanitation Officer:** `officer.water@civicresolve.internal` / `Officer@CivicResolve2026!`
+> - **Community Services Officer:** `officer.community@civicresolve.internal` / `Officer@CivicResolve2026!`
 
 ### 5. Start the Development Server
 ```bash
@@ -275,35 +278,50 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to view the 
 
 ---
 
+## 🐳 Docker & Container Deployment
+
+CivicResolve supports single-instance containerized deployment with persistent volume storage for the SQLite database and uploaded evidence files.
+
+```bash
+# Build and run with Docker Compose
+docker compose up -d --build
+
+# Inspect container status and health probe
+docker compose ps
+curl http://localhost:3000/health
+```
+
+---
+
 ## 🧪 Verification & Quality Benchmarks
 
-CivicResolve includes a robust automated test suite validating security boundaries, SLA calculations, role scopes, and user workflows.
+CivicResolve includes a robust automated test suite validating security boundaries, SLA calculations, role scopes, public data protection, and user workflows.
 
 ```bash
-# Run the entire test suite in serialized mode
-pnpm test -- --run --pool=forks --maxWorkers=1 --minWorkers=1
-```
+# Run the complete test suite (61 tests passing across 14 test files)
+pnpm test
 
-```bash
-# Run TypeScript static analysis
+# Run TypeScript strict static analysis
 pnpm run check
-```
 
-```bash
-# Run production production bundle compilation
+# Run production bundle compilation
 pnpm run build
 ```
 
-### Verified Test Suite Breakdown (50 Passing Tests)
-- `server/public.workflow.feedback.test.ts` — Feedback submission & constraint enforcement
-- `server/internalAuth.test.ts` — Password hashing, scrypt verification, and JWT session creation
+### Verified Test Suite Breakdown (61 Passing Tests)
+- `server/security.hardening.test.ts` — Public PII masking, magic byte validation, path traversal prevention, foreign keys, concurrent sequences, and download proxy authorization
+- `server/public.portal.test.ts` — Login-free grievance creation, anonymous tracking, and DTO shape validation
+- `server/workflow.test.ts` — Finite state machine transitions, citizen reopen boundaries, and role guards
+- `server/internalAuth.test.ts` — Password hashing, credential verification, and JWT session handling
+- `server/officer.queue.test.ts` — Queue filtering, pagination, and departmental assignment verification
+- `server/staff.scope.test.ts` — Cross-department read/write isolation
 - `server/sla.test.ts` — Dynamic deadline computation and escalation rules
-- `server/staff.scope.test.ts` — Cross-department read/write protection
-- `server/officer.queue.test.ts` — Queue filtering, pagination, and assignment verification
-- `server/public.portal.test.ts` — Login-free grievance creation and token validation
-- `server/workflow.test.ts` — Finite state machine transitions and invalid edge cases
-- `client/src/pages/GrievanceDetail.test.tsx` — JSDOM UI rendering and mutation integration
-- `client/src/pages/Phase2Analytics.test.tsx` — Dashboard metrics calculation and rendering
+- `server/catalog.integration.test.ts` — Departmental taxonomy and catalog initialization
+- `server/civic-enhancements.test.ts` — Civic enhancements and search logic
+- `server/auth.logout.test.ts` — Secure multi-cookie revocation
+- `server/public.workflow.feedback.test.ts` — Feedback submission and constraint enforcement
+- `client/src/pages/GrievanceDetail.test.tsx` — UI workflow mutations and timeline rendering
+- `client/src/pages/Phase2Analytics.test.tsx` — Executive analytics telemetry and SLA charts
 
 ---
 

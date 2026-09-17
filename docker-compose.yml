@@ -1,0 +1,27 @@
+services:
+  civicresolve:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: civicresolve_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DATABASE_URL=file:/data/civicresolve.db
+      - UPLOAD_DIR=/uploads
+      - APP_URL=http://localhost:3000
+      - JWT_SECRET=change-this-to-a-secure-random-secret-in-production-min-32-chars
+      - SESSION_SECRET=change-this-to-a-secure-random-secret-in-production-min-32-chars
+    volumes:
+      - civicresolve_data:/data
+      - civicresolve_uploads:/uploads
+
+volumes:
+  civicresolve_data:
+    driver: local
+  civicresolve_uploads:
+    driver: local
