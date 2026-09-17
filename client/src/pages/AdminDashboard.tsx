@@ -26,6 +26,19 @@ import {
 
 const chartColors = ["#2563eb", "#0d9488", "#ea580c", "#881337", "#64748b", "#10b981"];
 
+const tooltipContentStyle = {
+  borderRadius: 16,
+  backgroundColor: "var(--card)",
+  borderColor: "var(--border)",
+  color: "var(--foreground)",
+  fontSize: 12,
+  boxShadow: "0 4px 20px -2px rgba(0, 0, 0, 0.12)",
+};
+
+const tooltipItemStyle = {
+  color: "var(--foreground)",
+};
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const dashboard = trpc.admin.dashboard.useQuery(undefined, { enabled: user?.role === "admin" });
@@ -169,7 +182,8 @@ export default function AdminDashboard() {
                   <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#71717a" }} axisLine={false} tickLine={false} />
                   <Tooltip
                     cursor={{ fill: "rgba(37,99,235,0.05)" }}
-                    contentStyle={{ borderRadius: 16, border: "1px solid #e4e4e7", fontSize: 12 }}
+                    contentStyle={tooltipContentStyle}
+                    itemStyle={tooltipItemStyle}
                   />
                   <Bar dataKey="total" fill="#2563eb" radius={[8, 8, 0, 0]} />
                 </BarChart>
@@ -208,7 +222,8 @@ export default function AdminDashboard() {
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#71717a" }} axisLine={false} tickLine={false} />
                   <Tooltip
                     cursor={{ fill: "rgba(13,148,136,0.05)" }}
-                    contentStyle={{ borderRadius: 16, border: "1px solid #e4e4e7", fontSize: 12 }}
+                    contentStyle={tooltipContentStyle}
+                    itemStyle={tooltipItemStyle}
                   />
                   <Bar dataKey="total" fill="#0d9488" radius={[0, 8, 8, 0]} />
                 </BarChart>
@@ -252,7 +267,10 @@ export default function AdminDashboard() {
                         <Cell key={row.name} fill={chartColors[index % chartColors.length]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ borderRadius: 14, border: "1px solid #e4e4e7", fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={tooltipContentStyle}
+                      itemStyle={tooltipItemStyle}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
