@@ -18,10 +18,12 @@ export function registerStorageProxy(app: Express) {
     const key = decodeURIComponent(rawKey).replace(/^\/+/, "").replace(/\.\./g, "");
 
     try {
-      // 1. Authenticate requester
+      // 1. Check for authenticated user or valid tracking reference
       const user = await sdk.authenticateRequest(req).catch(() => null);
-      if (!user) {
-        res.status(401).json({ error: "Authentication required to access case attachments." });
+      const queryTrackingNumber = typeof req.query.trackingNumber === "string" ? req.query.trackingNumber.trim().toUpperCase() : null;
+
+      if (!user && !queryTrackingNumber) {
+        res.status(401).json({ error: "Authentication or valid tracking number required to access case attachments." });
         return;
       }
 
@@ -58,17 +60,25 @@ export function registerStorageProxy(app: Express) {
       }
 
       const grievance = grvRows[0];
-      const isOwner = grievance.userId === user.id;
-      const isAssigned = grievance.assignedOfficerId === user.id;
-      const isDeptOfficer =
-        user.role === "officer" &&
-        user.departmentId != null &&
-        grievance.departmentId === user.departmentId;
-      const isAdmin = user.role === "admin";
 
-      if (!isOwner && !isAssigned && !isDeptOfficer && !isAdmin) {
-        res.status(403).json({ error: "You are not authorized to access this attachment." });
-        return;
+      if (user) {
+        const isOwner = grievance.userId === user.id;
+        const isAssigned = grievance.assignedOfficerId === user.id;
+        const isDeptOfficer =
+          user.role === "officer" &&
+          user.departmentId != null &&
+          grievance.departmentId === user.departmentId;
+        const isAdmin = user.role === "admin";
+
+        if (!isOwner && !isAssigned && !isDeptOfficer && !isAdmin) {
+          res.status(403).json({ error: "You are not authorized to access this attachment." });
+          return;
+        }
+      } else if (queryTrackingNumber) {
+        if (grievance.trackingNumber.toUpperCase() !== queryTrackingNumber) {
+          res.status(403).json({ error: "Invalid tracking reference for this attachment." });
+          return;
+        }
       }
 
       // 4. Retrieve and stream the file

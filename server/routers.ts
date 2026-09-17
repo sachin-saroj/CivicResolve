@@ -108,7 +108,11 @@ async function getOwnedOrAccessibleCase(grievanceId: number, userId: number, rol
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => {
+      if (!opts.ctx.user) return null;
+      const { passwordHash, ...safeUser } = opts.ctx.user;
+      return safeUser;
+    }),
     internalLogin: publicProcedure.input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(8).max(200) })).mutation(async ({ ctx, input }) => {
       if (isLoginRateLimited(input.email)) {
         throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many attempts. Try again later." });
@@ -246,7 +250,7 @@ export const appRouter = router({
           fileName: att.fileName,
           fileSize: att.fileSize,
           mimeType: att.mimeType,
-          fileUrl: `/api/attachments/${encodeURIComponent(att.fileKey)}`,
+          fileUrl: `/api/attachments/${encodeURIComponent(att.fileKey)}?trackingNumber=${encodeURIComponent(g.trackingNumber)}`,
         })),
         feedback: detail.feedback,
       };
@@ -438,11 +442,20 @@ export const appRouter = router({
     }),
     users: adminProcedure.query(async () => {
       const database = requireDb(await db.getDb());
-      return database.select().from(users).orderBy(desc(users.createdAt));
+      const allUsers = await database.select().from(users).orderBy(desc(users.createdAt));
+      return allUsers.map(({ passwordHash: _hash, ...safeUser }) => safeUser);
     }),
     officers: adminProcedure.query(async () => {
       const database = requireDb(await db.getDb());
-      return database.select({ profile: officerProfiles, user: users, department: departments }).from(officerProfiles).innerJoin(users, eq(officerProfiles.userId, users.id)).innerJoin(departments, eq(officerProfiles.departmentId, departments.id));
+      const rows = await database
+        .select({ profile: officerProfiles, user: users, department: departments })
+        .from(officerProfiles)
+        .innerJoin(users, eq(officerProfiles.userId, users.id))
+        .innerJoin(departments, eq(officerProfiles.departmentId, departments.id));
+      return rows.map(r => {
+        const { passwordHash: _hash, ...safeUser } = r.user;
+        return { profile: r.profile, user: safeUser, department: r.department };
+      });
     }),
     assign: adminProcedure.input(z.object({ grievanceId: z.number().int().positive(), officerId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       await getOwnedOrAccessibleCase(input.grievanceId, ctx.user.id, "admin");

@@ -10,7 +10,7 @@ export interface StorageProvider {
 export class LocalStorageProvider implements StorageProvider {
   private baseDir: string;
 
-  constructor(baseDir = "./uploads") {
+  constructor(baseDir = process.env.UPLOAD_DIR || "./uploads") {
     this.baseDir = path.resolve(process.cwd(), baseDir);
   }
 

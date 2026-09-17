@@ -115,21 +115,35 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
+  const host = process.env.HOST || "0.0.0.0";
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-    const SLA_CHECK_INTERVAL_MS = 15 * 60 * 1000;
-    setInterval(() => {
-      escalateOverdueGrievances().catch(error => {
-        console.error("[SLA Escalation] Background check error:", error);
-      });
-    }, SLA_CHECK_INTERVAL_MS);
+  const SLA_CHECK_INTERVAL_MS = 15 * 60 * 1000;
+  const slaInterval = setInterval(() => {
+    escalateOverdueGrievances().catch(error => {
+      console.error("[SLA Escalation] Background check error:", error);
+    });
+  }, SLA_CHECK_INTERVAL_MS);
+
+  server.listen(port, host, () => {
+    console.log(`Server running on http://${host === "0.0.0.0" ? "localhost" : host}:${port}/`);
   });
+
+  const gracefulShutdown = () => {
+    console.log("[Server] Received termination signal, closing server...");
+    clearInterval(slaInterval);
+    server.close(() => {
+      console.log("[Server] HTTP server closed gracefully.");
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", gracefulShutdown);
+  process.on("SIGINT", gracefulShutdown);
 }
 
 startServer().catch(console.error);
