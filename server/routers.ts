@@ -43,6 +43,55 @@ const adminProcedure = roleProcedure(["admin"]);
 
 const safeAttachmentTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
+function isSafeFileExtension(fileName: string, mimeType: string): boolean {
+  const lastDot = fileName.lastIndexOf(".");
+  if (lastDot === -1) return false;
+  const ext = fileName.slice(lastDot).toLowerCase();
+  if (mimeType === "application/pdf") return ext === ".pdf";
+  if (mimeType === "image/jpeg") return ext === ".jpg" || ext === ".jpeg";
+  if (mimeType === "image/png") return ext === ".png";
+  if (mimeType === "image/webp") return ext === ".webp";
+  return false;
+}
+
+function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
+  if (buffer.length < 4) return false;
+  if (mimeType === "application/pdf") {
+    return buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46;
+  }
+  if (mimeType === "image/png") {
+    return (
+      buffer.length >= 8 &&
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47 &&
+      buffer[4] === 0x0d &&
+      buffer[5] === 0x0a &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0x0a
+    );
+  }
+  if (mimeType === "image/jpeg") {
+    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  if (mimeType === "image/webp") {
+    return (
+      buffer.length >= 12 &&
+      buffer.toString("ascii", 0, 4) === "RIFF" &&
+      buffer.toString("ascii", 8, 12) === "WEBP"
+    );
+  }
+  return false;
+}
+
+function maskComplainantEmail(email?: string | null): string | null {
+  if (!email) return null;
+  const [user, domain] = email.split("@");
+  if (!domain) return "***";
+  return `${user.slice(0, 1)}***@${domain}`;
+}
+
 function requireDb<T>(value: T | null): T {
   if (!value) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The service is temporarily unavailable." });
   return value;
@@ -94,8 +143,39 @@ export const appRouter = router({
       limit: z.number().int().min(1).max(100).optional(),
       offset: z.number().int().min(0).optional(),
       overdue: z.boolean().optional(),
-    }).optional()).query(({ input }) => db.listAssignedGrievances(0, input, "admin")),
-    suggestions: publicProcedure.input(z.object({ search: z.string().trim().min(2).max(80) })).query(({ input }) => db.suggestInternalGrievances(input.search, 0, "admin")),
+    }).optional()).query(async ({ input }) => {
+      // Server-side response shaping: Never expose contactEmail, residential location, internal notes, or user IDs to public queries
+      const rawRows = await db.listAssignedGrievances(0, input, "admin");
+      return rawRows.map(row => ({
+        grievance: {
+          id: row.grievance.id,
+          trackingNumber: row.grievance.trackingNumber,
+          title: row.grievance.title,
+          status: row.grievance.status,
+          priority: row.grievance.priority,
+          createdAt: row.grievance.createdAt,
+          updatedAt: row.grievance.updatedAt,
+          dueAt: row.grievance.dueAt,
+          escalatedAt: row.grievance.escalatedAt,
+          contactEmail: null,
+          location: null,
+          description: row.grievance.title,
+        },
+        department: row.department,
+        category: row.category,
+      }));
+    }),
+    suggestions: publicProcedure.input(z.object({ search: z.string().trim().min(2).max(80) })).query(async ({ input }) => {
+      const rows = await db.suggestInternalGrievances(input.search, 0, "admin");
+      // Sanitize suggestions: return tracking number, title, status, and department without residential locations
+      return rows.map(r => ({
+        trackingNumber: r.trackingNumber,
+        title: r.title,
+        status: r.status,
+        departmentName: r.departmentName,
+        location: null,
+      }));
+    }),
     lookup: publicProcedure.input(z.object({ trackingNumber: z.string().trim().min(5).max(32) })).query(async ({ input }) => {
       const database = requireDb(await db.getDb());
       const rows = await database
@@ -123,14 +203,65 @@ export const appRouter = router({
     detail: publicProcedure.input(z.object({ trackingNumber: z.string().trim().regex(/^GRV-\d{4}-\d{5}$/i, "Enter a valid grievance tracking reference.") })).query(async ({ input }) => {
       const detail = await db.getGrievanceDetailByTracking(input.trackingNumber);
       if (!detail) throw new TRPCError({ code: "NOT_FOUND", message: "Grievance not found." });
-      return detail;
+
+      // Explicit public DTO response shaping (PUBLIC RESPONSE ≠ INTERNAL RECORD)
+      const g = detail.grievance;
+      return {
+        grievance: {
+          id: g.id,
+          trackingNumber: g.trackingNumber,
+          title: g.title,
+          description: g.description,
+          location: g.location,
+          priority: g.priority,
+          status: g.status,
+          resolutionDetails: g.resolutionDetails,
+          createdAt: g.createdAt,
+          updatedAt: g.updatedAt,
+          dueAt: g.dueAt,
+          escalatedAt: g.escalatedAt,
+          resolvedAt: g.resolvedAt,
+          closedAt: g.closedAt,
+          contactEmail: maskComplainantEmail(g.contactEmail),
+        },
+        department: detail.department,
+        category: detail.category,
+        history: (detail.history || []).map(h => ({
+          history: {
+            id: h.history?.id,
+            grievanceId: h.history?.grievanceId,
+            previousStatus: h.history?.previousStatus,
+            newStatus: h.history?.newStatus,
+            activityType: h.history?.activityType,
+            remarks: h.history?.remarks,
+            actionTaken: h.history?.actionTaken,
+            createdAt: h.history?.createdAt,
+          },
+          actor: {
+            name: h.actor?.name ? "Official Staff" : "System",
+          },
+        })),
+        attachments: (detail.attachments || []).map(att => ({
+          id: att.id,
+          fileName: att.fileName,
+          fileSize: att.fileSize,
+          mimeType: att.mimeType,
+          fileUrl: `/api/attachments/${encodeURIComponent(att.fileKey)}`,
+        })),
+        feedback: detail.feedback,
+      };
     }),
     uploadAttachment: publicProcedure.input(z.object({ trackingNumber: z.string().trim().regex(/^GRV-\d{4}-\d{5}$/i), fileName: z.string().trim().min(1).max(255), mimeType: z.enum(["application/pdf", "image/jpeg", "image/png", "image/webp"]), fileData: z.string().min(1).max(2_800_000) })).mutation(async ({ input }) => {
       const detail = await db.getGrievanceDetailByTracking(input.trackingNumber);
       if (!detail) throw new TRPCError({ code: "NOT_FOUND", message: "Grievance not found." });
-      if (!safeAttachmentTypes.includes(input.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "Only PDF, JPG, PNG, and WEBP documents are accepted." });
+      if (!safeAttachmentTypes.includes(input.mimeType) || !isSafeFileExtension(input.fileName, input.mimeType)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Only valid PDF, JPG, PNG, and WEBP documents are accepted." });
+      }
       const buffer = Buffer.from(input.fileData, "base64");
       if (buffer.length > 2 * 1024 * 1024) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Attachments must be 2 MB or smaller." });
+      if (!validateMagicBytes(buffer, input.mimeType)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "File contents do not match the expected document format." });
+      }
       const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
       const grievanceId = detail.grievance.id;
       const stored = await storagePut(`grievances/${grievanceId}/${Date.now()}-${safeName}`, buffer, input.mimeType);
@@ -202,9 +333,14 @@ export const appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const detail = await getOwnedOrAccessibleCase(input.grievanceId, ctx.user.id, ctx.user.role);
       if (ctx.user.role === "user" && detail.grievance.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "You can only attach files to your own grievance." });
-      if (!safeAttachmentTypes.includes(input.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "Only PDF, JPG, PNG, and WEBP documents are accepted." });
+      if (!safeAttachmentTypes.includes(input.mimeType) || !isSafeFileExtension(input.fileName, input.mimeType)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Only valid PDF, JPG, PNG, and WEBP documents are accepted." });
+      }
       const buffer = Buffer.from(input.fileData, "base64");
       if (buffer.length > 2 * 1024 * 1024) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Attachments must be 2 MB or smaller." });
+      if (!validateMagicBytes(buffer, input.mimeType)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "File contents do not match the expected document format." });
+      }
       const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
       const stored = await storagePut(`grievances/${input.grievanceId}/${Date.now()}-${safeName}`, buffer, input.mimeType);
       const database = requireDb(await db.getDb());
@@ -309,27 +445,17 @@ export const appRouter = router({
       return database.select({ profile: officerProfiles, user: users, department: departments }).from(officerProfiles).innerJoin(users, eq(officerProfiles.userId, users.id)).innerJoin(departments, eq(officerProfiles.departmentId, departments.id));
     }),
     assign: adminProcedure.input(z.object({ grievanceId: z.number().int().positive(), officerId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
-      const database = requireDb(await db.getDb());
-      const detail = await getOwnedOrAccessibleCase(input.grievanceId, ctx.user.id, "admin");
-      const profile = await database.select().from(officerProfiles).where(eq(officerProfiles.userId, input.officerId)).limit(1);
-      if (!profile[0] || profile[0].departmentId !== detail.grievance.departmentId) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose an available officer from the grievance department." });
-
-      const currentStatus = detail.grievance.status;
-      if (currentStatus === "submitted") {
-        await db.updateGrievanceWorkflow({ grievanceId: input.grievanceId, nextStatus: "acknowledged", remarks: "Grievance acknowledged for department review.", changedByUserId: ctx.user.id });
-        await database.update(grievances).set({ assignedOfficerId: input.officerId }).where(eq(grievances.id, input.grievanceId));
-        await db.updateGrievanceWorkflow({ grievanceId: input.grievanceId, nextStatus: "assigned", remarks: "Grievance assigned to the responsible officer.", changedByUserId: ctx.user.id });
-      } else if (currentStatus === "acknowledged") {
-        await database.update(grievances).set({ assignedOfficerId: input.officerId }).where(eq(grievances.id, input.grievanceId));
-        await db.updateGrievanceWorkflow({ grievanceId: input.grievanceId, nextStatus: "assigned", remarks: "Grievance assigned to the responsible officer.", changedByUserId: ctx.user.id });
-      } else {
-        await database.update(grievances).set({ assignedOfficerId: input.officerId }).where(eq(grievances.id, input.grievanceId));
-        await db.addGrievanceProgress({ grievanceId: input.grievanceId, remarks: "Responsible officer reassigned by administrator.", changedByUserId: ctx.user.id });
+      await getOwnedOrAccessibleCase(input.grievanceId, ctx.user.id, "admin");
+      try {
+        await db.assignGrievanceOfficer({
+          grievanceId: input.grievanceId,
+          officerId: input.officerId,
+          changedByUserId: ctx.user.id,
+        });
+        return { success: true };
+      } catch (err: any) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: err.message || "Failed to assign officer." });
       }
-
-      await database.insert(notifications).values({ userId: input.officerId, grievanceId: input.grievanceId, title: "New grievance assignment", message: `You have been assigned ${detail.grievance.trackingNumber}.`, type: "assigned" });
-      if (detail.grievance.contactEmail) void db.logEmailNotificationAttempt({ userId: detail.grievance.userId, grievanceId: input.grievanceId, recipient: detail.grievance.contactEmail, event: "assignment", trackingNumber: detail.grievance.trackingNumber });
-      return { success: true };
     }),
     createDepartment: adminProcedure.input(z.object({ name: z.string().trim().min(3).max(120), description: z.string().trim().max(1000).optional(), slaHours: z.number().int().min(1).max(720).default(72) })).mutation(async ({ input }) => {
       const database = requireDb(await db.getDb());

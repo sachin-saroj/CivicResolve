@@ -28,8 +28,10 @@ describe("login-free public portal", () => {
   it("opens a full case record through its tracking reference without a session", async () => {
     const record = { grievance: { id: 8, trackingNumber: "GRV-2026-00008" } };
     mocks.getGrievanceDetailByTracking.mockResolvedValueOnce(record);
-
-    await expect(appRouter.createCaller(anonymousContext).portal.detail({ trackingNumber: "grv-2026-00008" })).resolves.toEqual(record);
+    const result = await appRouter.createCaller(anonymousContext).portal.detail({ trackingNumber: "grv-2026-00008" });
+    expect(result.grievance.id).toBe(8);
+    expect(result.grievance.trackingNumber).toBe("GRV-2026-00008");
+    expect(result.grievance.contactEmail).toBeNull();
     expect(mocks.getGrievanceDetailByTracking).toHaveBeenCalledWith("grv-2026-00008");
   });
 

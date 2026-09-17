@@ -4,13 +4,15 @@ import path from "path";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { escalateOverdueGrievances } from "../db";
+import { escalateOverdueGrievances, getDb } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -34,11 +36,67 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
+
+  // 1. Security Headers (Helmet with customized CSP for fonts and Vite HMR)
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+          imgSrc: ["'self'", "data:", "blob:"],
+          connectSrc: ["'self'", "ws:", "wss:"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+    })
+  );
+
+  // 2. Standard REST Health Check endpoint for probes and orchestration
+  app.get(["/health", "/api/health"], async (_req, res) => {
+    try {
+      const db = await getDb();
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        database: db ? "connected" : "disconnected",
+      });
+    } catch {
+      res.status(503).json({ status: "error", database: "disconnected" });
+    }
+  });
+
+  // 3. Server-side rate limiting on public and sensitive API routes
+  const generalApiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests from this IP. Please try again after 15 minutes." },
+  });
+  app.use("/api/", generalApiLimiter);
+
+  const sensitiveWriteLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 25,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Submission rate limit exceeded. Please wait a moment before trying again." },
+  });
+  app.use("/api/trpc/portal.create", sensitiveWriteLimiter);
+  app.use("/api/trpc/portal.uploadAttachment", sensitiveWriteLimiter);
+  app.use("/api/trpc/portal.feedback", sensitiveWriteLimiter);
+
+  // Configure body parser with appropriate limits
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Register storage and authentication proxies
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -47,6 +105,7 @@ async function startServer() {
       createContext,
     })
   );
+
   // development mode uses Vite, production mode uses static files
   const isProductionBundle = fs.existsSync(path.resolve(import.meta.dirname, "public", "index.html"));
   if (process.env.NODE_ENV !== "production" && !isProductionBundle) {
