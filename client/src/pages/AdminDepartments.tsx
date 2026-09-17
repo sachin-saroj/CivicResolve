@@ -83,9 +83,14 @@ export default function AdminDepartments() {
 
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
-              <label className="text-xs font-semibold text-[#52525b] dark:text-[#a1a1aa] block mb-1.5">
-                Department Name
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-[#52525b] dark:text-[#a1a1aa]">
+                  Department Name
+                </label>
+                <span className="text-[11px] text-[#71717a] dark:text-[#a1a1aa]">
+                  Min. 3 characters
+                </span>
+              </div>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}

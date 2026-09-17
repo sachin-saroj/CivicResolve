@@ -173,6 +173,8 @@ export default function AdminGrievances() {
                           <Button
                             size="sm"
                             variant="outline"
+                            aria-label="Assign officer to case"
+                            title="Assign officer to case"
                             disabled={!assignee[item.grievance.id] || assign.isPending}
                             onClick={() =>
                               assign.mutate({

@@ -320,7 +320,23 @@ export default function PublicCaseDetail() {
                 </p>
               ) : null}
             </div>
-          ) : null}
+          ) : (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2563eb] dark:text-[#60a5fa] mb-1">
+                Citizen Feedback Window
+              </p>
+              <h2 className="font-editorial text-2xl font-bold text-[#0a0a0a] dark:text-white">
+                Resolution In Progress
+              </h2>
+              <p className="mt-2.5 text-xs text-[#52525b] dark:text-[#a1a1aa] leading-relaxed">
+                The citizen satisfaction and rating survey will unlock automatically once this grievance is formally resolved and closed by the assigned service branch.
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-[#2563eb] dark:text-[#60a5fa] rounded-xl bg-[#eff6ff] dark:bg-[#14233c] p-3 border border-[#dbeafe] dark:border-[#1e3a66]">
+                <Clock3 className="h-4 w-4 shrink-0" />
+                <span>Active handling stage: {pretty(data.grievance.status)}</span>
+              </div>
+            </div>
+          )}
 
           {/* Internal Staff Sign-in Callout with exact string "Protected service workspace" */}
           <div className="pt-6 mt-6 border-t border-[#f0f2f5] dark:border-[#20242f]">
