@@ -95,6 +95,17 @@ export default function PublicTracker() {
                 </button>
               </div>
             </form>
+
+            {/* Editorial Secondary Action for Ledger Discovery */}
+            <div className="mt-4 flex items-center justify-center">
+              <Link
+                href="/manage"
+                className="group inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-[#52525b] dark:text-[#a1a1aa] hover:text-[#2563eb] dark:hover:text-[#60a5fa] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
+              >
+                <span>Or inspect recent filings on the <span className="font-semibold underline decoration-[#2563eb]/30 group-hover:decoration-[#2563eb] underline-offset-4">Public Grievance Ledger</span></span>
+                <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
           </div>
 
           {/* Result or Initial Guidance */}
