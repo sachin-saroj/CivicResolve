@@ -12,7 +12,7 @@ export default function EditorialFooter() {
           {/* Left Column: Brand & Manifesto */}
           <div className="space-y-5">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-3.5 py-1 text-xs font-semibold text-neutral-300">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none" />
               <span>Public Service Infrastructure • Open Access</span>
             </div>
 
@@ -120,7 +120,7 @@ export default function EditorialFooter() {
             </h2>
           </div>
           <div className="text-xs text-neutral-500 space-y-1">
-            <p>© 2026 CivicResolve Public Redress Infrastructure.</p>
+            <p>© {new Date().getFullYear()} CivicResolve Public Redress Infrastructure.</p>
             <p>Certified Public Service Platform • All records encrypted & tracked.</p>
           </div>
         </div>

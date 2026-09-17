@@ -449,16 +449,16 @@ export default function GrievanceForm() {
                       : "border-[#d4d4d8] dark:border-[#27272a] bg-[#fafcfe] dark:bg-[#151922]"
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white dark:bg-[#1f242e] border border-[#e4e4e7] dark:border-[#2f3645] text-[#2563eb] shadow-2xs">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white dark:bg-[#1f242e] border border-[#e4e4e7] dark:border-[#2f3645] text-[#2563eb] shadow-2xs">
                         <FileUp className="h-6 w-6" />
                       </span>
                       <div>
                         <p className="text-xs sm:text-sm font-bold text-[#0a0a0a] dark:text-white">
                           {file ? file.name : "Upload supporting photograph or PDF"}
                         </p>
-                        <p className="text-[11px] text-[#71717a] dark:text-[#a1a1aa]">
+                        <p className="mt-0.5 text-[11px] text-[#71717a] dark:text-[#a1a1aa]">
                           {file
                             ? `${Math.ceil(file.size / 1024)} KB ready to send`
                             : "JPG, PNG, WEBP, or PDF up to 2MB maximum"}

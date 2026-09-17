@@ -84,7 +84,7 @@ export default function CivicDocket({
         {/* Header: Tracking ID & Quick Actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f0f2f5] dark:border-[#1e232e] pb-5 pt-1">
           <div>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#71717a] dark:text-[#a1a1aa] block">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 block">
               Civic Tracking Docket
             </span>
             <div className="mt-1 flex items-center gap-2">
@@ -95,7 +95,7 @@ export default function CivicDocket({
                 type="button"
                 onClick={copyTracking}
                 title="Copy reference number"
-                className="rounded-lg p-1.5 text-[#71717a] hover:bg-[#f4f4f6] dark:hover:bg-[#181d26] hover:text-[#0a0a0a] dark:hover:text-white transition"
+                className="rounded-lg p-1.5 text-stone-600 dark:text-stone-300 hover:bg-[#f4f4f6] dark:hover:bg-[#181d26] hover:text-[#0a0a0a] dark:hover:text-white transition"
               >
                 <Copy className="h-3.5 w-3.5" />
               </button>
@@ -269,7 +269,7 @@ export default function CivicDocket({
 
         {/* Footer Link to Full Tracker */}
         <div className="mt-6 pt-4 border-t border-[#f0f2f5] dark:border-[#1e232e] flex items-center justify-between">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#71717a] dark:text-[#a1a1aa]">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300">
             Archival Registry
           </span>
           <Link

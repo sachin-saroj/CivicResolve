@@ -161,7 +161,7 @@ export function FolderTabCard({
     <div className={`relative flex flex-col pt-3 ${className}`}>
       {/* Folder Tab Ear on Top */}
       <div className="flex items-center">
-        <div className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-t-xl bg-white dark:bg-[#12151b] border-t border-l border-r border-[#e4e4e7] dark:border-[#20242f] text-[11px] font-bold tracking-wider uppercase text-[#71717a] dark:text-[#a1a1aa] shadow-[0_-2px_6px_rgba(0,0,0,0.02)]`}>
+        <div className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-t-xl bg-white dark:bg-[#12151b] border-t border-l border-r border-[#e4e4e7] dark:border-[#20242f] text-[11px] font-bold tracking-wider uppercase text-[#71717a] dark:text-[#a1a1aa] shadow-[0_-2px_6px_rgba(0,0,0,0.02)] transition-colors duration-150`}>
           {icon ? <span className="h-3 w-3">{icon}</span> : null}
           <span>{tabTitle}</span>
         </div>
@@ -226,7 +226,7 @@ const statusConfig: Record<string, { label: string; bg: string; text: string; ri
     bg: "bg-rose-50 dark:bg-rose-950/70",
     text: "text-rose-800 dark:text-rose-200",
     ring: "ring-rose-300 dark:ring-rose-800",
-    dot: "bg-rose-500 animate-pulse",
+    dot: "bg-rose-500 animate-pulse motion-reduce:animate-none",
   },
   resolved: {
     label: "Resolved",
@@ -276,7 +276,7 @@ export function PriorityDot({ priority }: { priority?: string | null }) {
     low: { dot: "bg-slate-400 dark:bg-slate-500", text: "text-slate-600 dark:text-slate-400" },
     medium: { dot: "bg-sky-500", text: "text-sky-700 dark:text-sky-400" },
     high: { dot: "bg-amber-500", text: "text-amber-700 dark:text-amber-400" },
-    critical: { dot: "bg-rose-500 animate-pulse", text: "text-rose-700 dark:text-rose-400 font-semibold" },
+    critical: { dot: "bg-rose-500 animate-pulse motion-reduce:animate-none", text: "text-rose-700 dark:text-rose-400 font-semibold" },
   };
   const conf = style[priority || "medium"] || style.medium;
 

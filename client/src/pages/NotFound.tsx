@@ -1,5 +1,5 @@
 import { CivicMark, EditorialHeading, PillButton, TactileCard } from "@/components/CivicPrimitives";
-import { ArrowLeft, FileQuestion, Search } from "lucide-react";
+import { ArrowLeft, FilePlus2, FileQuestion, Search } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function NotFound() {
@@ -40,8 +40,19 @@ export default function NotFound() {
             className="w-full sm:w-auto"
           >
             <Search className="mr-2 h-4 w-4" />
-            Track Existing Docket
+            Track Public Docket
           </PillButton>
+        </div>
+
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={() => setLocation("/cases/new")}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2563eb] dark:text-[#60a5fa] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] rounded-full px-3 py-1"
+          >
+            <FilePlus2 className="h-3.5 w-3.5" />
+            <span>Need to file a new grievance? Submit a Citizen Affidavit →</span>
+          </button>
         </div>
 
         <p className="mt-8 text-xs font-mono uppercase tracking-widest text-[#71717a] dark:text-[#a1a1aa]">
