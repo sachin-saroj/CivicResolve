@@ -21,8 +21,6 @@
     "seed:admin": "tsx server/seed-admin.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.693.0",
-    "@aws-sdk/s3-request-presigner": "^3.693.0",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.17.4",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -77,9 +75,10 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.64.0",
     "react-resizable-panels": "^3.0.6",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
     "recharts": "^2.15.2",
     "sonner": "^2.0.7",
-    "streamdown": "^1.4.0",
     "superjson": "^1.13.3",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
