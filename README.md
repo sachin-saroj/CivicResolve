@@ -7,32 +7,57 @@
 
 ---
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-civicresolve--h5bt.onrender.com-00C7B7?style=for-the-badge&logo=render&logoColor=white)](https://civicresolve-h5bt.onrender.com/)
 [![React 19](https://img.shields.io/badge/React-19.2-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-5.9_Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-v20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![tRPC v11](https://img.shields.io/badge/tRPC-v11.6-2596BE?style=for-the-badge&logo=trpc&logoColor=white)](https://trpc.io/)
-[![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.44-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
-[![SQLite WAL](https://img.shields.io/badge/SQLite_3-WAL_Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
+[![Express](https://img.shields.io/badge/Express-4.22_Patched-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![tRPC v11](https://img.shields.io/badge/tRPC-v11.8-2596BE?style=for-the-badge&logo=trpc&logoColor=white)](https://trpc.io/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
+[![SQLite WAL](https://img.shields.io/badge/SQLite_3-libSQL_WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
+[![Recharts](https://img.shields.io/badge/Recharts-v3.10-22c55e?style=for-the-badge)](https://recharts.org/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.1-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Tests Passing](https://img.shields.io/badge/Vitest-61_Passing-10B981?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Security Hardened](https://img.shields.io/badge/Security-Phase_29_Certified-4F46E5?style=for-the-badge)](docs/PHASE-29-SECURITY-HARDENING-REPORT.md)
+[![Tests Passing](https://img.shields.io/badge/Vitest-104%2F104_Passing-10B981?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Docker Ready](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](Dockerfile)
 [![License MIT](https://img.shields.io/badge/License-MIT-6366F1?style=for-the-badge)](LICENSE)
 
 <br/>
 
+### 🌐 Live Production Deployment
+### [https://civicresolve-h5bt.onrender.com/](https://civicresolve-h5bt.onrender.com/)
+
+[Live Demo](#-live-demo--interactive-walkthrough) •
 [Executive Summary](#-executive-summary) •
-[Visual System Walkthrough (Annotated Architecture Gallery)](#-visual-system-walkthrough-annotated-architecture-gallery) •
+[Visual System Walkthrough](#-visual-system-walkthrough-annotated-architecture-gallery) •
 [Core Innovations](#-core-capabilities--problem-solving) •
 [System Architecture](#-system-architecture--engineering-design) •
 [Workflow & SLA Engine](#-grievance-lifecycle--sla-engine) •
 [Security Architecture](#-security-architecture--hardening-specifications) •
 [Demo & Viva Guide](#-submission-demo-path--viva-guide) •
 [Quick Start](#-quick-start--installation) •
-[Docker Deployment](#-docker--containerized-deployment) •
-[API Reference](#-complete-api--route-reference)
+[Docker Deployment](#-docker--containerized-deployment)
 
 </div>
+
+---
+
+## 🚀 Live Demo & Interactive Walkthrough
+
+The production release of **CivicResolve** is deployed live on Render with full database persistence, automated SLA escalation routines, and 1-click credential autofill:
+
+> 🔗 **Live Website URL:** **[https://civicresolve-h5bt.onrender.com/](https://civicresolve-h5bt.onrender.com/)**
+
+### 👥 Interactive Role Access & Demo Credentials
+
+| Role | Portal URL | Demo Credentials | Primary Access / Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Citizen (Public)** | [`/`](https://civicresolve-h5bt.onrender.com/) or [`/cases/new`](https://civicresolve-h5bt.onrender.com/cases/new) | **No Login Required** | Submit complaints with evidence attachments, real-time public docket tracker (`/track`), citizen CSAT feedback rating on resolved cases. |
+| **👑 System Administrator** | [`/staff/login`](https://civicresolve-h5bt.onrender.com/staff/login) | `admin@civicresolve.internal`<br/>`Admin@CivicResolve2026!` | Global triage board, Recharts telemetry & MTTR metrics, SLA threshold governance, manage departments, categories & officers. |
+| **🏗️ Public Works Officer** | [`/staff/login`](https://civicresolve-h5bt.onrender.com/staff/login) | `officer.works@civicresolve.internal`<br/>`Officer@CivicResolve2026!` | Departmental queue (`Road maintenance`, `Street lighting`, `Drainage`), status lifecycle transitions, SLA countdown monitoring. |
+| **💧 Water & Sanitation Officer** | [`/staff/login`](https://civicresolve-h5bt.onrender.com/staff/login) | `officer.water@civicresolve.internal`<br/>`Officer@CivicResolve2026!` | Departmental queue (`Water supply`, `Sewerage`, `Waste collection`), evidence upload, case resolution notes. |
+| **🤝 Community Services Officer**| [`/staff/login`](https://civicresolve-h5bt.onrender.com/staff/login) | `officer.community@civicresolve.internal`<br/>`Officer@CivicResolve2026!` | Departmental queue (`Public safety`, `Parks`, `Facilities`), citizen remarks, municipal triage workflow. |
+
+> 💡 **Evaluator Convenience:** On the [Staff Login Page](https://civicresolve-h5bt.onrender.com/staff/login), click any of the **Demo Staff Accounts** pills under the form to automatically fill the credentials in 1 click!
 
 ---
 
