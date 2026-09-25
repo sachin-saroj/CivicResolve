@@ -32,7 +32,40 @@ import { hashPassword } from "./internalAuth";
  *      Desig:    Community Affairs Coordinator
  */
 
+export const DEFAULT_ADMIN_EMAIL = "admin@civicresolve.internal";
+export const DEFAULT_ADMIN_PASSWORD = "Admin@CivicResolve2026!";
 export const DEFAULT_OFFICER_PASSWORD = "Officer@CivicResolve2026!";
+
+export interface SeedCredentialsConfig {
+  adminEmail?: string;
+  adminPassword?: string;
+  isProduction: boolean;
+}
+
+export function validateSeedCredentials(config: SeedCredentialsConfig) {
+  const adminEmail = (config.adminEmail || "").trim().toLowerCase();
+  const adminPassword = config.adminPassword || "";
+
+  if (config.isProduction) {
+    if (!adminEmail) {
+      throw new Error("ADMIN_EMAIL must be explicitly provided in production.");
+    }
+    if (!adminPassword || adminPassword.trim().length === 0) {
+      throw new Error("ADMIN_PASSWORD must be explicitly set via environment variable or CLI argument in production.");
+    }
+    if (adminPassword.length < 12) {
+      throw new Error("ADMIN_PASSWORD must be at least 12 characters in production.");
+    }
+    if (adminPassword === DEFAULT_ADMIN_PASSWORD) {
+      throw new Error("ADMIN_PASSWORD cannot use the known development default in production.");
+    }
+  }
+
+  return {
+    adminEmail: adminEmail || DEFAULT_ADMIN_EMAIL,
+    adminPassword: adminPassword || DEFAULT_ADMIN_PASSWORD,
+  };
+}
 
 export const sampleOfficers = [
   {
@@ -59,8 +92,15 @@ export const sampleOfficers = [
 ];
 
 async function seedAdminAndOfficers() {
-  const adminEmail = (process.argv[2] || process.env.ADMIN_EMAIL || "admin@civicresolve.internal").trim().toLowerCase();
-  const adminPassword = process.argv[3] || process.env.ADMIN_PASSWORD || "Admin@CivicResolve2026!";
+  const isProduction = process.env.NODE_ENV === "production";
+  const rawAdminEmail = process.argv[2] || process.env.ADMIN_EMAIL;
+  const rawAdminPassword = process.argv[3] || process.env.ADMIN_PASSWORD;
+
+  const { adminEmail, adminPassword } = validateSeedCredentials({
+    adminEmail: rawAdminEmail,
+    adminPassword: rawAdminPassword,
+    isProduction,
+  });
   const adminName = process.env.ADMIN_NAME || "System Administrator";
 
   console.log(`\n======================================================`);
@@ -111,7 +151,11 @@ async function seedAdminAndOfficers() {
 
     console.log(`[Seed Admin] Created new administrator account.`);
   }
-  console.log(`[Seed Admin] Admin Account Ready: ${adminEmail} | Password: ${adminPassword}\n`);
+  if (isProduction) {
+    console.log(`[Seed Admin] Admin Account Ready: ${adminEmail} (password hidden for security)\n`);
+  } else {
+    console.log(`[Seed Admin] Admin Account Ready: ${adminEmail} | Password: ${adminPassword}\n`);
+  }
 
   // 2. Seed / Upsert Sample Departmental Officers
   console.log(`[Seed Officers] Mapping officers to active departments...`);
@@ -119,6 +163,11 @@ async function seedAdminAndOfficers() {
   const deptMap = new Map(activeDepartments.map(d => [d.name.toLowerCase().trim(), d.id]));
 
   for (const officer of sampleOfficers) {
+    if (isProduction && officer.password === DEFAULT_OFFICER_PASSWORD) {
+      console.log(`[Seed Officers] Skipping demo officer "${officer.name}" (${officer.email}) in production (requires explicit secure password).`);
+      continue;
+    }
+
     const lookupKey = officer.departmentName.toLowerCase().trim();
     const deptId = deptMap.get(lookupKey);
 
@@ -203,7 +252,11 @@ async function seedAdminAndOfficers() {
     }
 
     console.log(`  -> Officer Email:    ${officerEmail}`);
-    console.log(`  -> Password:         ${officer.password}`);
+    if (isProduction) {
+      console.log(`  -> Password:         [REDACTED]`);
+    } else {
+      console.log(`  -> Password:         ${officer.password}`);
+    }
     console.log(`  -> Department:       ${officer.departmentName} (ID: ${deptId})`);
     console.log(`  -> Designation:      ${officer.designation}\n`);
   }
@@ -213,11 +266,13 @@ async function seedAdminAndOfficers() {
   console.log(`======================================================\n`);
 }
 
-seedAdminAndOfficers()
-  .then(() => {
-    process.exit(0);
-  })
-  .catch(error => {
-    console.error("[Seed Script] Error during seed:", error);
-    process.exit(1);
-  });
+if (process.env.NODE_ENV !== "test") {
+  seedAdminAndOfficers()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error("[Seed Script] Error during seed:", error);
+      process.exit(1);
+    });
+}

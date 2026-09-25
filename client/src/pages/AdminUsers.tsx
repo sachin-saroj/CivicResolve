@@ -1,27 +1,67 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { EmptyNotice, PageHeader, pretty } from "@/components/CivicPrimitives";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { Search, Shield, User, UsersRound } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 
 export default function AdminUsers() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [search, setSearch] = useState("");
-  const people = trpc.admin.users.useQuery(undefined, { enabled: user?.role === "admin" });
+  const [page, setPage] = useState(0);
+  const pageSize = 25;
 
-  const visible = useMemo(
-    () =>
-      (people.data || []).filter((person) =>
-        `${person.name || ""} ${person.email || ""}`.toLowerCase().includes(search.toLowerCase())
-      ),
-    [people.data, search]
+  const queryParams = useMemo(
+    () => ({
+      search: search.trim() || undefined,
+      limit: pageSize,
+      offset: page * pageSize,
+      paginate: true,
+    }),
+    [search, page, pageSize]
   );
 
-  if (user?.role && user.role !== "admin") {
+  const people = trpc.admin.users.useQuery(queryParams, { enabled: user?.role === "admin" });
+
+  const items = useMemo(() => {
+    if (!people.data) return [];
+    return Array.isArray(people.data) ? people.data : people.data.items;
+  }, [people.data]);
+
+  const total = useMemo(() => {
+    if (!people.data) return 0;
+    return Array.isArray(people.data) ? people.data.length : people.data.total;
+  }, [people.data]);
+
+  const hasMore = useMemo(() => {
+    if (!people.data) return false;
+    return Array.isArray(people.data) ? false : people.data.hasMore;
+  }, [people.data]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center p-8">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2563eb] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "admin") {
     return (
       <EmptyNotice title="Administrator Access Required">
-        This user directory is reserved exclusively for system administrators.
+        <div className="space-y-3">
+          <p>This user directory is reserved exclusively for system administrators.</p>
+          <div>
+            <Link
+              href="/staff/login"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#0a0a0a] dark:bg-white text-white dark:text-black px-4 py-2 text-xs font-semibold hover:bg-[#27272a] transition"
+            >
+              Sign In to Staff Workspace →
+            </Link>
+          </div>
+        </div>
       </EmptyNotice>
     );
   }
@@ -41,7 +81,10 @@ export default function AdminUsers() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#71717a] dark:text-[#a1a1aa]" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
               placeholder="Search user by name or email address..."
               className="pl-10 rounded-full border-[#e4e4e7] dark:border-[#20242f] bg-[#fafcfe] dark:bg-[#181d26] text-xs sm:text-sm"
             />
@@ -52,7 +95,7 @@ export default function AdminUsers() {
           <div className="p-8">
             <div className="h-40 animate-pulse rounded-2xl bg-neutral-100 dark:bg-neutral-800" />
           </div>
-        ) : visible.length ? (
+        ) : items.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -64,7 +107,7 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f2f5] dark:divide-[#20242f]">
-                {visible.map((person) => {
+                {items.map((person) => {
                   const roleBadgeClass =
                     person.role === "admin"
                       ? "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60"
@@ -111,6 +154,39 @@ export default function AdminUsers() {
             <EmptyNotice title="No Users Match Query" icon={<UsersRound className="h-6 w-6" />}>
               Try searching with another query or clear the search filter.
             </EmptyNotice>
+          </div>
+        )}
+
+        {/* Pagination controls */}
+        {total > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-[#f0f2f5] dark:border-[#20242f] text-xs text-[#71717a] dark:text-[#a1a1aa]">
+            <p>
+              Showing <span className="font-semibold text-[#0a0a0a] dark:text-white">{page * pageSize + 1}</span> to{" "}
+              <span className="font-semibold text-[#0a0a0a] dark:text-white">
+                {Math.min((page + 1) * pageSize, total)}
+              </span>{" "}
+              of <span className="font-semibold text-[#0a0a0a] dark:text-white">{total}</span> users
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0 || people.isLoading}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                className="h-8 rounded-lg text-xs"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasMore || people.isLoading}
+                onClick={() => setPage((p) => p + 1)}
+                className="h-8 rounded-lg text-xs"
+              >
+                Next
+              </Button>
+            </div>
           </div>
         )}
       </section>

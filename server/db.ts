@@ -1,5 +1,5 @@
 import { createClient } from "@libsql/client";
-import { and, desc, eq, gte, inArray, isNull, like, lte, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, like, lte, notInArray, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import {
   attachments,
@@ -55,7 +55,7 @@ async function initTables(client: ReturnType<typeof createClient>) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
-      departmentId INTEGER NOT NULL REFERENCES departments(id),
+      departmentId INTEGER NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
       status TEXT NOT NULL DEFAULT 'active',
       createdAt INTEGER NOT NULL,
       updatedAt INTEGER NOT NULL
@@ -66,8 +66,8 @@ async function initTables(client: ReturnType<typeof createClient>) {
 
     CREATE TABLE IF NOT EXISTS officerProfiles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userId INTEGER NOT NULL UNIQUE REFERENCES users(id),
-      departmentId INTEGER NOT NULL REFERENCES departments(id),
+      userId INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      departmentId INTEGER NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
       designation TEXT,
       availability TEXT NOT NULL DEFAULT 'available',
       createdAt INTEGER NOT NULL,
@@ -77,11 +77,11 @@ async function initTables(client: ReturnType<typeof createClient>) {
     CREATE TABLE IF NOT EXISTS grievances (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       trackingNumber TEXT NOT NULL UNIQUE,
-      userId INTEGER NOT NULL REFERENCES users(id),
+      userId INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
       contactEmail TEXT,
-      categoryId INTEGER NOT NULL REFERENCES grievanceCategories(id),
-      departmentId INTEGER NOT NULL REFERENCES departments(id),
-      assignedOfficerId INTEGER REFERENCES users(id),
+      categoryId INTEGER NOT NULL REFERENCES grievanceCategories(id) ON DELETE RESTRICT,
+      departmentId INTEGER NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
+      assignedOfficerId INTEGER REFERENCES users(id) ON DELETE SET NULL,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
       location TEXT,
@@ -98,32 +98,32 @@ async function initTables(client: ReturnType<typeof createClient>) {
 
     CREATE TABLE IF NOT EXISTS grievanceHistory (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      grievanceId INTEGER NOT NULL REFERENCES grievances(id),
+      grievanceId INTEGER NOT NULL REFERENCES grievances(id) ON DELETE CASCADE,
       previousStatus TEXT,
       newStatus TEXT NOT NULL,
       activityType TEXT NOT NULL DEFAULT 'status_change',
       remarks TEXT,
       actionTaken TEXT,
-      changedByUserId INTEGER NOT NULL REFERENCES users(id),
+      changedByUserId INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
       createdAt INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS attachments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      grievanceId INTEGER NOT NULL REFERENCES grievances(id),
+      grievanceId INTEGER NOT NULL REFERENCES grievances(id) ON DELETE CASCADE,
       fileKey TEXT NOT NULL,
       fileUrl TEXT NOT NULL,
       fileName TEXT NOT NULL,
       mimeType TEXT NOT NULL,
       fileSize INTEGER NOT NULL,
-      uploadedByUserId INTEGER NOT NULL REFERENCES users(id),
+      uploadedByUserId INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
       uploadedAt INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS feedback (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      grievanceId INTEGER NOT NULL UNIQUE REFERENCES grievances(id),
-      userId INTEGER NOT NULL REFERENCES users(id),
+      grievanceId INTEGER NOT NULL UNIQUE REFERENCES grievances(id) ON DELETE CASCADE,
+      userId INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
       rating INTEGER NOT NULL,
       comment TEXT,
       createdAt INTEGER NOT NULL
@@ -131,8 +131,8 @@ async function initTables(client: ReturnType<typeof createClient>) {
 
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userId INTEGER NOT NULL REFERENCES users(id),
-      grievanceId INTEGER REFERENCES grievances(id),
+      userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      grievanceId INTEGER REFERENCES grievances(id) ON DELETE CASCADE,
       title TEXT NOT NULL,
       message TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -145,9 +145,12 @@ async function initTables(client: ReturnType<typeof createClient>) {
     CREATE INDEX IF NOT EXISTS idx_grievances_user ON grievances(userId);
     CREATE INDEX IF NOT EXISTS idx_grievances_due_at ON grievances(dueAt);
     CREATE INDEX IF NOT EXISTS idx_grievances_updated_at ON grievances(updatedAt);
+    CREATE INDEX IF NOT EXISTS idx_grievances_status ON grievances(status);
     CREATE INDEX IF NOT EXISTS idx_history_grievance ON grievanceHistory(grievanceId);
     CREATE INDEX IF NOT EXISTS idx_attachments_grievance ON attachments(grievanceId);
     CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(userId, readAt);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(userId, createdAt);
+    CREATE INDEX IF NOT EXISTS idx_officer_profiles_department ON officerProfiles(departmentId);
   `);
   _tablesInitialized = true;
 }
@@ -558,34 +561,80 @@ export function isStaffCaseVisible(record: { assignedOfficerId: number | null; d
   return role === "admin" || record.assignedOfficerId === userId || (departmentId != null && record.departmentId === departmentId);
 }
 
-export async function listAssignedGrievances(officerId: number, filter?: QueueFilter, role: "officer" | "admin" = "officer", departmentId?: number | null, databaseOverride?: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
-  const db = databaseOverride ?? await getDb();
+export async function listAssignedGrievances(
+  officerId: number,
+  filter?: QueueFilter,
+  role: "officer" | "admin" = "officer",
+  departmentId?: number | null,
+  databaseOverride?: NonNullable<Awaited<ReturnType<typeof getDb>>>
+) {
+  const db = databaseOverride ?? (await getDb());
   if (!db) return [];
-  const scope = role === "admin"
-    ? undefined
-    : or(eq(grievances.assignedOfficerId, officerId), ...(departmentId ? [eq(grievances.departmentId, departmentId)] : []));
+  const scope =
+    role === "admin"
+      ? undefined
+      : or(
+          eq(grievances.assignedOfficerId, officerId),
+          ...(departmentId ? [eq(grievances.departmentId, departmentId)] : [])
+        );
   const conditions = scope ? [scope] : [];
   if (filter?.status) conditions.push(eq(grievances.status, filter.status));
   if (filter?.priority) conditions.push(eq(grievances.priority, filter.priority));
   if (filter?.categoryId) conditions.push(eq(grievances.categoryId, filter.categoryId));
   if (filter?.search) {
     const pattern = `%${filter.search}%`;
-    const textMatch = or(like(grievances.trackingNumber, pattern), like(grievances.title, pattern), like(grievances.location, pattern));
+    const textMatch = or(
+      like(grievances.trackingNumber, pattern),
+      like(grievances.title, pattern),
+      like(grievances.location, pattern)
+    );
     if (textMatch) conditions.push(textMatch);
   }
   if (filter?.dateFrom) conditions.push(gte(grievances.updatedAt, new Date(`${filter.dateFrom}T00:00:00.000Z`)));
   if (filter?.dateTo) conditions.push(lte(grievances.updatedAt, new Date(`${filter.dateTo}T23:59:59.999Z`)));
   if (filter?.overdue) conditions.push(lte(grievances.dueAt, new Date()), notInArray(grievances.status, ["resolved", "closed"]), isNull(grievances.escalatedAt));
+
+  const priorityOrderSql = sql`CASE ${grievances.priority}
+    WHEN 'critical' THEN 4
+    WHEN 'high' THEN 3
+    WHEN 'medium' THEN 2
+    WHEN 'low' THEN 1
+    ELSE 0 END`;
+
+  let orderByClauses: any[];
+  switch (filter?.sort) {
+    case "updated_asc":
+      orderByClauses = [asc(grievances.updatedAt)];
+      break;
+    case "priority_desc":
+      orderByClauses = [desc(priorityOrderSql), desc(grievances.updatedAt)];
+      break;
+    case "priority_asc":
+      orderByClauses = [asc(priorityOrderSql), desc(grievances.updatedAt)];
+      break;
+    case "status_asc":
+      orderByClauses = [asc(grievances.status), desc(grievances.updatedAt)];
+      break;
+    case "updated_desc":
+    default:
+      orderByClauses = [desc(grievances.updatedAt)];
+      break;
+  }
+
   const results = await db
     .select({ grievance: grievances, department: departments, category: grievanceCategories })
     .from(grievances)
     .innerJoin(departments, eq(grievances.departmentId, departments.id))
     .innerJoin(grievanceCategories, eq(grievances.categoryId, grievanceCategories.id))
-    .where(and(...conditions))
-    .orderBy(desc(grievances.updatedAt))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(...orderByClauses)
     .limit(Math.min(filter?.limit ?? 25, 100))
     .offset(filter?.offset ?? 0);
-  return sortAssignedGrievances(results.filter(result => isStaffCaseVisible(result.grievance, officerId, role, departmentId)), filter?.sort);
+
+  return sortAssignedGrievances(
+    results.filter((result) => isStaffCaseVisible(result.grievance, officerId, role, departmentId)),
+    filter?.sort
+  );
 }
 
 export const PUBLIC_SUGGESTION_LIMIT = 8;
@@ -637,16 +686,108 @@ export function buildSlaEscalationUpdate(now = new Date()) {
 export async function escalateOverdueGrievances(now = new Date()) {
   const db = await getDb();
   if (!db) return { updated: 0, grievanceIds: [] as number[] };
-  const overdue = await db.select().from(grievances).where(and(lte(grievances.dueAt, now), isNull(grievances.escalatedAt), notInArray(grievances.status, ["resolved", "closed", "escalated"]))).limit(100);
-  if (!overdue.length) return { updated: 0, grievanceIds: [] as number[] };
-  for (const grievance of overdue) {
-    await db.update(grievances).set({ ...buildSlaEscalationUpdate(now), updatedAt: now }).where(and(eq(grievances.id, grievance.id), isNull(grievances.escalatedAt)));
-    await db.insert(grievanceHistory).values({ grievanceId: grievance.id, previousStatus: grievance.status, newStatus: "escalated", activityType: "sla_escalation", remarks: "Case escalated automatically after its service deadline elapsed.", actionTaken: "Priority raised to critical for overdue handling.", changedByUserId: grievance.assignedOfficerId ?? grievance.userId, createdAt: now });
-    if (grievance.assignedOfficerId) {
-      await db.insert(notifications).values({ userId: grievance.assignedOfficerId, grievanceId: grievance.id, title: "SLA escalation", message: `Case ${grievance.trackingNumber} is overdue and requires attention.`, type: "sla_escalation", createdAt: now });
+
+  return db.transaction(async (tx) => {
+    const overdue = await tx
+      .select()
+      .from(grievances)
+      .where(
+        and(
+          lte(grievances.dueAt, now),
+          isNull(grievances.escalatedAt),
+          notInArray(grievances.status, ["resolved", "closed", "escalated"])
+        )
+      )
+      .limit(100);
+
+    if (!overdue.length) return { updated: 0, grievanceIds: [] as number[] };
+
+    for (const grievance of overdue) {
+      await tx
+        .update(grievances)
+        .set({ ...buildSlaEscalationUpdate(now), updatedAt: now })
+        .where(and(eq(grievances.id, grievance.id), isNull(grievances.escalatedAt)));
+
+      await tx.insert(grievanceHistory).values({
+        grievanceId: grievance.id,
+        previousStatus: grievance.status,
+        newStatus: "escalated",
+        activityType: "sla_escalation",
+        remarks: "Case escalated automatically after its service deadline elapsed.",
+        actionTaken: "Priority raised to critical for overdue handling.",
+        changedByUserId: grievance.assignedOfficerId ?? grievance.userId,
+        createdAt: now,
+      });
+
+      if (grievance.assignedOfficerId) {
+        await tx.insert(notifications).values({
+          userId: grievance.assignedOfficerId,
+          grievanceId: grievance.id,
+          title: "SLA escalation",
+          message: `Case ${grievance.trackingNumber} is overdue and requires attention.`,
+          type: "sla_escalation",
+          createdAt: now,
+        });
+      }
     }
-  }
-  return { updated: overdue.length, grievanceIds: overdue.map(grievance => grievance.id) };
+
+    return { updated: overdue.length, grievanceIds: overdue.map((grievance) => grievance.id) };
+  });
+}
+
+export async function promoteUserToOfficer(input: {
+  userId: number;
+  departmentId: number;
+  designation?: string | null;
+}) {
+  const database = await getDb();
+  if (!database) throw new Error("Database unavailable");
+
+  return database.transaction(async (tx) => {
+    const userRows = await tx.select().from(users).where(eq(users.id, input.userId)).limit(1);
+    if (!userRows[0]) {
+      throw new Error("User not found.");
+    }
+
+    const deptRows = await tx.select().from(departments).where(eq(departments.id, input.departmentId)).limit(1);
+    if (!deptRows[0]) {
+      throw new Error("Department not found.");
+    }
+
+    const now = new Date();
+
+    await tx
+      .update(users)
+      .set({ role: "officer", departmentId: input.departmentId, updatedAt: now })
+      .where(eq(users.id, input.userId));
+
+    const existingProfile = await tx
+      .select()
+      .from(officerProfiles)
+      .where(eq(officerProfiles.userId, input.userId))
+      .limit(1);
+
+    if (existingProfile[0]) {
+      await tx
+        .update(officerProfiles)
+        .set({
+          departmentId: input.departmentId,
+          designation: input.designation || null,
+          updatedAt: now,
+        })
+        .where(eq(officerProfiles.userId, input.userId));
+    } else {
+      await tx.insert(officerProfiles).values({
+        userId: input.userId,
+        departmentId: input.departmentId,
+        designation: input.designation || null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return { success: true };
+  });
 }
 
 export function buildBulkPrioritySideEffects(current: Array<{ id: number; userId: number; trackingNumber: string; status: GrievanceStatus }>, priority: GrievancePriority, changedByUserId: number) {
@@ -879,61 +1020,126 @@ export async function assignGrievanceOfficer(input: {
 
 export async function getAdminDashboardData() {
   const db = await getDb();
-  if (!db) return { total: 0, openTotal: 0, statusCounts: [], byDepartment: [], byCategory: [], workload: [], feedback: { responses: 0, averageRating: 0 }, sla: { overdue: 0, escalated: 0 }, averageResolutionHours: 0 };
-  
-  const allGrievances = await db.select().from(grievances);
-  const allDepartments = await db.select().from(departments);
-  const allCategories = await db.select().from(grievanceCategories);
-  const allUsers = await db.select().from(users);
-  const allFeedback = await db.select().from(feedback);
-
-  const total = allGrievances.length;
-  const statusMap = new Map<string, number>();
-  const deptMap = new Map<number, number>();
-  const catMap = new Map<number, number>();
-  const officerMap = new Map<number, number>();
-  let overdue = 0;
-  let escalated = 0;
-  let totalResolutionHours = 0;
-  let resolvedCount = 0;
-  const now = new Date();
-
-  for (const g of allGrievances) {
-    statusMap.set(g.status, (statusMap.get(g.status) || 0) + 1);
-    deptMap.set(g.departmentId, (deptMap.get(g.departmentId) || 0) + 1);
-    catMap.set(g.categoryId, (catMap.get(g.categoryId) || 0) + 1);
-    if (g.assignedOfficerId) {
-      officerMap.set(g.assignedOfficerId, (officerMap.get(g.assignedOfficerId) || 0) + 1);
-    }
-    if (g.dueAt && g.dueAt < now && !["resolved", "closed"].includes(g.status)) {
-      overdue += 1;
-    }
-    if (g.status === "escalated") {
-      escalated += 1;
-    }
-    if (g.resolvedAt && g.createdAt) {
-      const diffHours = (g.resolvedAt.getTime() - g.createdAt.getTime()) / (1000 * 60 * 60);
-      totalResolutionHours += Math.max(0, diffHours);
-      resolvedCount += 1;
-    }
+  if (!db) {
+    return {
+      total: 0,
+      openTotal: 0,
+      statusCounts: [],
+      byDepartment: [],
+      byCategory: [],
+      workload: [],
+      feedback: { responses: 0, averageRating: 0 },
+      sla: { overdue: 0, escalated: 0 },
+      averageResolutionHours: 0,
+    };
   }
 
-  const statusCounts = Array.from(statusMap.entries()).map(([status, count]) => ({ status, total: count }));
-  const openTotal = statusCounts.reduce((sum, row) => sum + (["resolved", "closed"].includes(row.status) ? 0 : row.total), 0);
+  const now = new Date();
 
-  const byDepartment = allDepartments
-    .map(d => ({ label: d.name, total: deptMap.get(d.id) || 0 }))
-    .filter(d => d.total > 0);
+  // Run targeted aggregation queries concurrently in SQLite
+  const [
+    statusRows,
+    byDepartment,
+    byCategory,
+    workload,
+    overdueRow,
+    resolutionRow,
+    feedbackRow,
+  ] = await Promise.all([
+    // 1. Status aggregation: GROUP BY status
+    db
+      .select({
+        status: grievances.status,
+        total: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(grievances)
+      .groupBy(grievances.status),
 
-  const byCategory = allCategories
-    .map(c => ({ label: c.name, total: catMap.get(c.id) || 0 }))
-    .filter(c => c.total > 0);
+    // 2. Department aggregation: INNER JOIN with grievances, GROUP BY department
+    db
+      .select({
+        label: departments.name,
+        total: sql<number>`count(${grievances.id})`.mapWith(Number),
+      })
+      .from(departments)
+      .innerJoin(grievances, eq(departments.id, grievances.departmentId))
+      .groupBy(departments.id, departments.name)
+      .orderBy(desc(sql`count(${grievances.id})`)),
 
-  const workload = allUsers
-    .filter(u => officerMap.has(u.id))
-    .map(u => ({ label: u.name || u.email || `Officer #${u.id}`, total: officerMap.get(u.id) || 0 }));
+    // 3. Category aggregation: INNER JOIN with grievances, GROUP BY category
+    db
+      .select({
+        label: grievanceCategories.name,
+        total: sql<number>`count(${grievances.id})`.mapWith(Number),
+      })
+      .from(grievanceCategories)
+      .innerJoin(grievances, eq(grievanceCategories.id, grievances.categoryId))
+      .groupBy(grievanceCategories.id, grievanceCategories.name)
+      .orderBy(desc(sql`count(${grievances.id})`)),
 
-  const averageRating = allFeedback.length > 0 ? (allFeedback.reduce((sum, f) => sum + f.rating, 0) / allFeedback.length) : 0;
+    // 4. Officer workload aggregation: INNER JOIN users with assigned grievances
+    db
+      .select({
+        label: sql<string>`coalesce(nullif(${users.name}, ''), nullif(${users.email}, ''), 'Officer #' || ${users.id})`.mapWith(String),
+        total: sql<number>`count(${grievances.id})`.mapWith(Number),
+      })
+      .from(users)
+      .innerJoin(grievances, eq(users.id, grievances.assignedOfficerId))
+      .groupBy(users.id, users.name, users.email)
+      .orderBy(desc(sql`count(${grievances.id})`)),
+
+    // 5. Overdue SLA count
+    db
+      .select({
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(grievances)
+      .where(
+        and(
+          lte(grievances.dueAt, now),
+          notInArray(grievances.status, ["resolved", "closed"])
+        )
+      ),
+
+    // 6. Average resolution time calculation in hours
+    db
+      .select({
+        resolvedCount: sql<number>`count(*)`.mapWith(Number),
+        avgHours: sql<number>`avg(case when ${grievances.resolvedAt} > ${grievances.createdAt} then (${grievances.resolvedAt} - ${grievances.createdAt}) / 3600.0 else 0 end)`.mapWith(Number),
+      })
+      .from(grievances)
+      .where(
+        and(
+          sql`${grievances.resolvedAt} is not null`,
+          sql`${grievances.createdAt} is not null`
+        )
+      ),
+
+    // 7. Feedback count and average rating
+    db
+      .select({
+        responses: sql<number>`count(*)`.mapWith(Number),
+        avgRating: sql<number>`avg(${feedback.rating})`.mapWith(Number),
+      })
+      .from(feedback),
+  ]);
+
+  const statusCounts = statusRows.map((r) => ({ status: r.status, total: r.total }));
+  const total = statusCounts.reduce((sum, r) => sum + r.total, 0);
+  const openTotal = statusCounts.reduce(
+    (sum, r) => sum + (["resolved", "closed"].includes(r.status) ? 0 : r.total),
+    0
+  );
+  const escalated = statusCounts.find((r) => r.status === "escalated")?.total ?? 0;
+  const overdue = overdueRow[0]?.count ?? 0;
+
+  const resolvedCount = resolutionRow[0]?.resolvedCount ?? 0;
+  const rawAvgHours = resolutionRow[0]?.avgHours ?? 0;
+  const averageResolutionHours = resolvedCount > 0 ? Math.round(rawAvgHours) : 0;
+
+  const feedbackResponses = feedbackRow[0]?.responses ?? 0;
+  const rawRating = feedbackRow[0]?.avgRating ?? 0;
+  const averageRating = feedbackResponses > 0 ? Number(rawRating.toFixed(1)) : 0;
 
   return {
     total,
@@ -943,26 +1149,78 @@ export async function getAdminDashboardData() {
     byCategory,
     workload,
     feedback: {
-      responses: allFeedback.length,
-      averageRating: Number(averageRating.toFixed(1)),
+      responses: feedbackResponses,
+      averageRating,
     },
     sla: { overdue, escalated },
-    averageResolutionHours: resolvedCount > 0 ? Math.round(totalResolutionHours / resolvedCount) : 0,
+    averageResolutionHours,
   };
 }
 
-export async function listAllGrievances(filter?: { search?: string; status?: GrievanceStatus }) {
+export type ListAllGrievancesOptions = {
+  search?: string;
+  status?: GrievanceStatus;
+  limit?: number;
+  offset?: number;
+  paginate?: boolean;
+};
+
+export async function listAllGrievances(filter?: ListAllGrievancesOptions) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    if (filter?.paginate) {
+      return { items: [], total: 0, hasMore: false, limit: filter.limit ?? 25, offset: filter.offset ?? 0 };
+    }
+    return [];
+  }
   const conditions = [] as any[];
   if (filter?.search) conditions.push(like(grievances.trackingNumber, `%${filter.search}%`));
   if (filter?.status) conditions.push(eq(grievances.status, filter.status));
+  const whereClause = conditions.length ? and(...conditions) : undefined;
+
+  if (filter?.paginate) {
+    const limit = Math.min(filter.limit ?? 25, 100);
+    const offset = filter.offset ?? 0;
+    const [countResult, items] = await Promise.all([
+      db.select({ count: sql<number>`count(*)`.mapWith(Number) }).from(grievances).where(whereClause),
+      db
+        .select({
+          grievance: grievances,
+          department: departments,
+          category: grievanceCategories,
+          citizen: { id: users.id, name: users.name, email: users.email },
+        })
+        .from(grievances)
+        .innerJoin(departments, eq(grievances.departmentId, departments.id))
+        .innerJoin(grievanceCategories, eq(grievances.categoryId, grievanceCategories.id))
+        .innerJoin(users, eq(grievances.userId, users.id))
+        .where(whereClause)
+        .orderBy(desc(grievances.updatedAt))
+        .limit(limit)
+        .offset(offset),
+    ]);
+    const total = countResult[0]?.count ?? 0;
+    return {
+      items,
+      total,
+      hasMore: offset + items.length < total,
+      limit,
+      offset,
+    };
+  }
+
   return db
-    .select({ grievance: grievances, department: departments, category: grievanceCategories, citizen: { id: users.id, name: users.name, email: users.email } })
+    .select({
+      grievance: grievances,
+      department: departments,
+      category: grievanceCategories,
+      citizen: { id: users.id, name: users.name, email: users.email },
+    })
     .from(grievances)
     .innerJoin(departments, eq(grievances.departmentId, departments.id))
     .innerJoin(grievanceCategories, eq(grievances.categoryId, grievanceCategories.id))
     .innerJoin(users, eq(grievances.userId, users.id))
-    .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(grievances.updatedAt));
+    .where(whereClause)
+    .orderBy(desc(grievances.updatedAt))
+    .limit(Math.min(filter?.limit ?? 250, 500));
 }

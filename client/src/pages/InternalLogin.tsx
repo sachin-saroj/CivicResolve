@@ -161,35 +161,37 @@ export default function InternalLogin() {
                 </button>
               </form>
 
-              {/* Quick Fill Testing Credentials Pill Box */}
-              <div className="mt-8 pt-6 border-t border-[#f0f2f5] dark:border-[#20242f]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#71717a] dark:text-[#a1a1aa] mb-2.5">
-                  Demo Testing Accounts (Click to Fill)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fillCredentials("admin@civicresolve.internal", "Admin@CivicResolve2026!")}
-                    className="rounded-xl border border-[#e4e4e7] dark:border-[#20242f] bg-[#f4f4f6] dark:bg-[#181d26] px-3 py-1.5 text-[11px] font-semibold text-[#0a0a0a] dark:text-white hover:border-[#2563eb] transition"
-                  >
-                    👑 System Administrator
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillCredentials("officer.works@civicresolve.internal", "Officer@CivicResolve2026!")}
-                    className="rounded-xl border border-[#e4e4e7] dark:border-[#20242f] bg-[#f4f4f6] dark:bg-[#181d26] px-3 py-1.5 text-[11px] font-semibold text-[#0a0a0a] dark:text-white hover:border-[#2563eb] transition"
-                  >
-                    🏗️ Public Works Officer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillCredentials("officer.water@civicresolve.internal", "Officer@CivicResolve2026!")}
-                    className="rounded-xl border border-[#e4e4e7] dark:border-[#20242f] bg-[#f4f4f6] dark:bg-[#181d26] px-3 py-1.5 text-[11px] font-semibold text-[#0a0a0a] dark:text-white hover:border-[#2563eb] transition"
-                  >
-                    💧 Water & Sanitation Officer
-                  </button>
+              {/* Quick Fill Testing Credentials Pill Box (Development Only) */}
+              {import.meta.env.DEV ? (
+                <div className="mt-8 pt-6 border-t border-[#f0f2f5] dark:border-[#20242f]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#71717a] dark:text-[#a1a1aa] mb-2.5">
+                    Demo Testing Accounts (Click to Fill)
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fillCredentials("admin@civicresolve.internal", "Admin@CivicResolve2026!")}
+                      className="rounded-xl border border-[#e4e4e7] dark:border-[#20242f] bg-[#f4f4f6] dark:bg-[#181d26] px-3 py-1.5 text-[11px] font-semibold text-[#0a0a0a] dark:text-white hover:border-[#2563eb] transition"
+                    >
+                      👑 System Administrator
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fillCredentials("officer.works@civicresolve.internal", "Officer@CivicResolve2026!")}
+                      className="rounded-xl border border-[#e4e4e7] dark:border-[#20242f] bg-[#f4f4f6] dark:bg-[#181d26] px-3 py-1.5 text-[11px] font-semibold text-[#0a0a0a] dark:text-white hover:border-[#2563eb] transition"
+                    >
+                      🏗️ Public Works Officer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fillCredentials("officer.water@civicresolve.internal", "Officer@CivicResolve2026!")}
+                      className="rounded-xl border border-[#e4e4e7] dark:border-[#20242f] bg-[#f4f4f6] dark:bg-[#181d26] px-3 py-1.5 text-[11px] font-semibold text-[#0a0a0a] dark:text-white hover:border-[#2563eb] transition"
+                    >
+                      💧 Water & Sanitation Officer
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
 
             <div className="pt-6 text-center">

@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { EmptyNotice, MetricCard, PageHeader } from "@/components/CivicPrimitives";
+import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
@@ -40,13 +41,31 @@ const tooltipItemStyle = {
 };
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const dashboard = trpc.admin.dashboard.useQuery(undefined, { enabled: user?.role === "admin" });
 
-  if (user?.role && user.role !== "admin") {
+  if (loading) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center p-8">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2563eb] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "admin") {
     return (
       <EmptyNotice title="Administrator Access Required">
-        This executive analytics dashboard is reserved exclusively for system administrators.
+        <div className="space-y-3">
+          <p>This executive analytics dashboard is reserved exclusively for system administrators.</p>
+          <div>
+            <Link
+              href="/staff/login"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#0a0a0a] dark:bg-white text-white dark:text-black px-4 py-2 text-xs font-semibold hover:bg-[#27272a] transition"
+            >
+              Sign In to Staff Workspace →
+            </Link>
+          </div>
+        </div>
       </EmptyNotice>
     );
   }

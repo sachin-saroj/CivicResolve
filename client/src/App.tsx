@@ -1,26 +1,65 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import DashboardLayout from "@/components/DashboardLayout";
-import Home from "@/pages/Home";
-import GrievanceForm from "@/pages/GrievanceForm";
-import InternalLogin from "@/pages/InternalLogin";
-import GrievanceDetail from "@/pages/GrievanceDetail";
-import NotFound from "@/pages/NotFound";
-import OfficerGrievances from "@/pages/OfficerGrievances";
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminDepartments from "@/pages/AdminDepartments";
-import AdminCategories from "@/pages/AdminCategories";
-import AdminOfficers from "@/pages/AdminOfficers";
-import AdminGrievances from "@/pages/AdminGrievances";
-import AdminUsers from "@/pages/AdminUsers";
-import PublicCaseDetail from "@/pages/PublicCaseDetail";
-import PublicTracker from "@/pages/PublicTracker";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { useEffect } from "react";
+import { AdminGuard } from "@/components/AdminGuard";
+import { Suspense, lazy, useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 
-function Workspace({ component: Component }: { component: React.ComponentType }) { return <DashboardLayout><Component /></DashboardLayout>; }
+const Home = lazy(() => import("@/pages/Home"));
+const GrievanceForm = lazy(() => import("@/pages/GrievanceForm"));
+const InternalLogin = lazy(() => import("@/pages/InternalLogin"));
+const GrievanceDetail = lazy(() => import("@/pages/GrievanceDetail"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const OfficerGrievances = lazy(() => import("@/pages/OfficerGrievances"));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const AdminDepartments = lazy(() => import("@/pages/AdminDepartments"));
+const AdminCategories = lazy(() => import("@/pages/AdminCategories"));
+const AdminOfficers = lazy(() => import("@/pages/AdminOfficers"));
+const AdminGrievances = lazy(() => import("@/pages/AdminGrievances"));
+const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
+const PublicCaseDetail = lazy(() => import("@/pages/PublicCaseDetail"));
+const PublicTracker = lazy(() => import("@/pages/PublicTracker"));
+
+function CivicRouteLoader() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading page content"
+      className="flex min-h-[50vh] flex-col items-center justify-center p-8 text-center"
+    >
+      <div className="relative flex items-center justify-center">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-stone-200 border-t-[#2563eb] dark:border-stone-800 dark:border-t-blue-400" />
+      </div>
+      <p className="mt-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        Loading...
+      </p>
+    </div>
+  );
+}
+
+function Workspace({ component: Component, params }: { component: React.ComponentType<any>; params?: any }) {
+  return (
+    <DashboardLayout>
+      <Suspense fallback={<CivicRouteLoader />}>
+        <Component params={params} />
+      </Suspense>
+    </DashboardLayout>
+  );
+}
+
+function AdminWorkspace({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <DashboardLayout>
+      <AdminGuard>
+        <Suspense fallback={<CivicRouteLoader />}>
+          <Component />
+        </Suspense>
+      </AdminGuard>
+    </DashboardLayout>
+  );
+}
 
 function TitleManager() {
   const [location] = useLocation();
@@ -66,27 +105,40 @@ function Router() {
   return (
     <>
       <TitleManager />
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/manage">{() => <Workspace component={OfficerGrievances} />}</Route>
-        <Route path="/board">{() => <Workspace component={OfficerGrievances} />}</Route>
-        <Route path="/track" component={PublicTracker} />
-        <Route path="/track/:trackingNumber" component={PublicTracker} />
-        <Route path="/staff/login" component={InternalLogin} />
-        <Route path="/cases/new">{() => <Workspace component={GrievanceForm} />}</Route>
-        <Route path="/cases/:trackingNumber">{() => <Workspace component={PublicCaseDetail} />}</Route>
-        <Route path="/admin">{() => <Workspace component={AdminDashboard} />}</Route>
-        <Route path="/admin/departments">{() => <Workspace component={AdminDepartments} />}</Route>
-        <Route path="/admin/categories">{() => <Workspace component={AdminCategories} />}</Route>
-        <Route path="/admin/officers">{() => <Workspace component={AdminOfficers} />}</Route>
-        <Route path="/admin/cases">{() => <Workspace component={AdminGrievances} />}</Route>
-        <Route path="/admin/users">{() => <Workspace component={AdminUsers} />}</Route>
-        <Route path="/officer/cases/:trackingNumber">{() => <Workspace component={GrievanceDetail} />}</Route>
-        <Route path="/grievances/:id">{() => <Workspace component={GrievanceDetail} />}</Route>
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense fallback={<CivicRouteLoader />}>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/manage">{() => <Workspace component={OfficerGrievances} />}</Route>
+          <Route path="/board">{() => <Workspace component={OfficerGrievances} />}</Route>
+          <Route path="/track" component={PublicTracker} />
+          <Route path="/track/:trackingNumber" component={PublicTracker} />
+          <Route path="/staff/login" component={InternalLogin} />
+          <Route path="/cases/new">{() => <Workspace component={GrievanceForm} />}</Route>
+          <Route path="/cases/:trackingNumber">{(params) => <Workspace component={PublicCaseDetail} params={params} />}</Route>
+          <Route path="/admin">{() => <AdminWorkspace component={AdminDashboard} />}</Route>
+          <Route path="/admin/departments">{() => <AdminWorkspace component={AdminDepartments} />}</Route>
+          <Route path="/admin/categories">{() => <AdminWorkspace component={AdminCategories} />}</Route>
+          <Route path="/admin/officers">{() => <AdminWorkspace component={AdminOfficers} />}</Route>
+          <Route path="/admin/cases">{() => <AdminWorkspace component={AdminGrievances} />}</Route>
+          <Route path="/admin/users">{() => <AdminWorkspace component={AdminUsers} />}</Route>
+          <Route path="/officer/cases/:trackingNumber">{(params) => <Workspace component={GrievanceDetail} params={params} />}</Route>
+          <Route path="/grievances/:id">{(params) => <Workspace component={GrievanceDetail} params={params} />}</Route>
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </>
   );
 }
 
-export default function App() { return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Toaster richColors /><Router /></TooltipProvider></ThemeProvider></ErrorBoundary>; }
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light" switchable>
+        <TooltipProvider>
+          <Toaster richColors />
+          <Router />
+        </TooltipProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}

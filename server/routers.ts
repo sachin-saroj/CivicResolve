@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   attachments,
@@ -431,7 +431,17 @@ export const appRouter = router({
       await db.escalateOverdueGrievances();
       return db.getAdminDashboardData();
     }),
-    listGrievances: adminProcedure.input(z.object({ search: z.string().trim().max(80).optional(), status: z.enum(grievanceStatusValues).optional() }).optional()).query(({ input }) => db.listAllGrievances(input)),
+    listGrievances: adminProcedure
+      .input(
+        z.object({
+          search: z.string().trim().max(80).optional(),
+          status: z.enum(grievanceStatusValues).optional(),
+          limit: z.number().int().min(1).max(100).optional(),
+          offset: z.number().int().min(0).optional(),
+          paginate: z.boolean().optional(),
+        }).optional()
+      )
+      .query(({ input }) => db.listAllGrievances(input)),
     departments: adminProcedure.query(async () => {
       const database = requireDb(await db.getDb());
       return database.select().from(departments).orderBy(departments.name);
@@ -440,11 +450,50 @@ export const appRouter = router({
       const database = requireDb(await db.getDb());
       return database.select({ category: grievanceCategories, department: departments }).from(grievanceCategories).innerJoin(departments, eq(grievanceCategories.departmentId, departments.id)).orderBy(grievanceCategories.name);
     }),
-    users: adminProcedure.query(async () => {
-      const database = requireDb(await db.getDb());
-      const allUsers = await database.select().from(users).orderBy(desc(users.createdAt));
-      return allUsers.map(({ passwordHash: _hash, ...safeUser }) => safeUser);
-    }),
+    users: adminProcedure
+      .input(
+        z.object({
+          search: z.string().trim().max(80).optional(),
+          limit: z.number().int().min(1).max(100).optional(),
+          offset: z.number().int().min(0).optional(),
+          paginate: z.boolean().optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        const database = requireDb(await db.getDb());
+        const conditions = [] as any[];
+        if (input?.search) {
+          const pattern = `%${input.search}%`;
+          conditions.push(or(like(users.name, pattern), like(users.email, pattern)));
+        }
+        const whereClause = conditions.length ? and(...conditions) : undefined;
+
+        if (input?.paginate) {
+          const limit = Math.min(input.limit ?? 25, 100);
+          const offset = input.offset ?? 0;
+          const [countResult, rows] = await Promise.all([
+            database.select({ count: sql<number>`count(*)`.mapWith(Number) }).from(users).where(whereClause),
+            database.select().from(users).where(whereClause).orderBy(desc(users.createdAt)).limit(limit).offset(offset),
+          ]);
+          const total = countResult[0]?.count ?? 0;
+          const items = rows.map(({ passwordHash: _hash, ...safeUser }) => safeUser);
+          return {
+            items,
+            total,
+            hasMore: offset + items.length < total,
+            limit,
+            offset,
+          };
+        }
+
+        const rows = await database
+          .select()
+          .from(users)
+          .where(whereClause)
+          .orderBy(desc(users.createdAt))
+          .limit(Math.min(input?.limit ?? 250, 500));
+        return rows.map(({ passwordHash: _hash, ...safeUser }) => safeUser);
+      }),
     officers: adminProcedure.query(async () => {
       const database = requireDb(await db.getDb());
       const rows = await database
@@ -495,20 +544,24 @@ export const appRouter = router({
       await database.update(grievanceCategories).set({ status: input.status }).where(eq(grievanceCategories.id, input.categoryId));
       return { success: true };
     }),
-    makeOfficer: adminProcedure.input(z.object({ userId: z.number().int().positive(), departmentId: z.number().int().positive(), designation: z.string().trim().max(120).optional() })).mutation(async ({ input }) => {
-      const database = requireDb(await db.getDb());
-      const user = await database.select().from(users).where(eq(users.id, input.userId)).limit(1);
-      if (!user[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
-      await database.update(users).set({ role: "officer" }).where(eq(users.id, input.userId));
-      const existingProfile = await database.select().from(officerProfiles).where(eq(officerProfiles.userId, input.userId)).limit(1);
-      const now = new Date();
-      if (existingProfile[0]) {
-        await database.update(officerProfiles).set({ departmentId: input.departmentId, designation: input.designation || null, updatedAt: now }).where(eq(officerProfiles.userId, input.userId));
-      } else {
-        await database.insert(officerProfiles).values({ userId: input.userId, departmentId: input.departmentId, designation: input.designation || null, createdAt: now, updatedAt: now });
-      }
-      return { success: true };
-    }),
+    makeOfficer: adminProcedure
+      .input(
+        z.object({
+          userId: z.number().int().positive(),
+          departmentId: z.number().int().positive(),
+          designation: z.string().trim().max(120).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        try {
+          return await db.promoteUserToOfficer(input);
+        } catch (err: any) {
+          if (err.message === "User not found.") {
+            throw new TRPCError({ code: "NOT_FOUND", message: err.message });
+          }
+          throw new TRPCError({ code: "BAD_REQUEST", message: err.message || "Failed to promote user to officer." });
+        }
+      }),
   }),
 
   notifications: router({

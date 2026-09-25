@@ -14,8 +14,8 @@ services:
       - DATABASE_URL=file:/data/civicresolve.db
       - UPLOAD_DIR=/uploads
       - APP_URL=http://localhost:3000
-      - JWT_SECRET=change-this-to-a-secure-random-secret-in-production-min-32-chars
-      - SESSION_SECRET=change-this-to-a-secure-random-secret-in-production-min-32-chars
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET:-${JWT_SECRET}}
     volumes:
       - civicresolve_data:/data
       - civicresolve_uploads:/uploads

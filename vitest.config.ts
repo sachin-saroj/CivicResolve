@@ -14,10 +14,11 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts", "client/**/*.test.tsx"],
+    include: ["server/**/*.test.ts", "server/**/*.spec.ts", "client/**/*.{test,spec}.{ts,tsx}"],
+    fileParallelism: false,
     env: {
       JWT_SECRET: "test-jwt-secret-key-at-least-32-chars-long",
-      DATABASE_URL: "file:./local.db",
+      DATABASE_URL: "file:./test.db",
     },
   },
 });

@@ -10,22 +10,43 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 
 export default function AdminGrievances() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const utils = trpc.useUtils();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [assignee, setAssignee] = useState<Record<number, string>>({});
 
+  const [page, setPage] = useState(0);
+  const pageSize = 25;
+
   const params = useMemo(
     () => ({
       search: search.trim() || undefined,
       status: status === "all" ? undefined : (status as any),
+      limit: pageSize,
+      offset: page * pageSize,
+      paginate: true,
     }),
-    [search, status]
+    [search, status, page, pageSize]
   );
 
   const cases = trpc.admin.listGrievances.useQuery(params, { enabled: user?.role === "admin" });
   const officers = trpc.admin.officers.useQuery(undefined, { enabled: user?.role === "admin" });
+
+  const items = useMemo(() => {
+    if (!cases.data) return [];
+    return Array.isArray(cases.data) ? cases.data : cases.data.items;
+  }, [cases.data]);
+
+  const total = useMemo(() => {
+    if (!cases.data) return 0;
+    return Array.isArray(cases.data) ? cases.data.length : cases.data.total;
+  }, [cases.data]);
+
+  const hasMore = useMemo(() => {
+    if (!cases.data) return false;
+    return Array.isArray(cases.data) ? false : cases.data.hasMore;
+  }, [cases.data]);
 
   const assign = trpc.admin.assign.useMutation({
     onSuccess: () => {
@@ -36,10 +57,28 @@ export default function AdminGrievances() {
     onError: (error) => toast.error(error.message),
   });
 
-  if (user?.role && user.role !== "admin") {
+  if (loading) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center p-8">
+        <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#2563eb] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "admin") {
     return (
       <EmptyNotice title="Administrator Access Required">
-        This executive case triage console is reserved exclusively for system administrators.
+        <div className="space-y-3">
+          <p>This executive case triage console is reserved exclusively for system administrators.</p>
+          <div>
+            <Link
+              href="/staff/login"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#0a0a0a] dark:bg-white text-white dark:text-black px-4 py-2 text-xs font-semibold hover:bg-[#27272a] transition"
+            >
+              Sign In to Staff Workspace →
+            </Link>
+          </div>
+        </div>
       </EmptyNotice>
     );
   }
@@ -59,7 +98,10 @@ export default function AdminGrievances() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#71717a] dark:text-[#a1a1aa]" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
               placeholder="Search by tracking reference ID (e.g. GRV-2026-00001)..."
               className="pl-10 rounded-full border-[#e4e4e7] dark:border-[#20242f] bg-[#fafcfe] dark:bg-[#181d26] text-xs sm:text-sm"
             />
@@ -69,7 +111,10 @@ export default function AdminGrievances() {
             <Filter className="h-4 w-4 text-[#71717a] dark:text-[#a1a1aa] shrink-0 hidden sm:block" />
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(0);
+              }}
               className="rounded-full border border-[#e4e4e7] dark:border-[#20242f] bg-[#fafcfe] dark:bg-[#181d26] px-4 py-2 text-xs font-semibold text-[#0a0a0a] dark:text-white outline-none focus:ring-2 focus:ring-[#2563eb]"
             >
               <option value="all">All Statuses</option>
@@ -93,7 +138,7 @@ export default function AdminGrievances() {
           <div className="p-8">
             <div className="h-40 animate-pulse rounded-2xl bg-neutral-100 dark:bg-neutral-800" />
           </div>
-        ) : cases.data?.length ? (
+        ) : items.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -107,7 +152,7 @@ export default function AdminGrievances() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f2f5] dark:divide-[#20242f]">
-                {cases.data.map((item) => {
+                {items.map((item) => {
                   const options = (officers.data || []).filter(
                     (officer) =>
                       officer.profile.departmentId === item.grievance.departmentId &&
@@ -199,6 +244,39 @@ export default function AdminGrievances() {
             <EmptyNotice title="No Grievances Found in Current Filter">
               Citizen grievance records will appear here as they are filed and routed through municipal channels.
             </EmptyNotice>
+          </div>
+        )}
+
+        {/* Pagination controls */}
+        {total > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-[#f0f2f5] dark:border-[#20242f] text-xs text-[#71717a] dark:text-[#a1a1aa]">
+            <p>
+              Showing <span className="font-semibold text-[#0a0a0a] dark:text-white">{page * pageSize + 1}</span> to{" "}
+              <span className="font-semibold text-[#0a0a0a] dark:text-white">
+                {Math.min((page + 1) * pageSize, total)}
+              </span>{" "}
+              of <span className="font-semibold text-[#0a0a0a] dark:text-white">{total}</span> cases
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0 || cases.isLoading}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                className="h-8 rounded-lg text-xs"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasMore || cases.isLoading}
+                onClick={() => setPage((p) => p + 1)}
+                className="h-8 rounded-lg text-xs"
+              >
+                Next
+              </Button>
+            </div>
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { ArrowUpRight, CheckCircle2, Clock3, FileText, MapPin, AlertCircle, Sparkles, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 
 export function CivicMark({ inverse = false, size = "md" }: { inverse?: boolean; size?: "sm" | "md" | "lg" }) {
   const isLg = size === "lg";

@@ -74,7 +74,9 @@ export const officerProfiles = sqliteTable("officerProfiles", {
     .notNull(),
   createdAt: integer("createdAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
   updatedAt: integer("updatedAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
-});
+}, table => ({
+  departmentIdx: index("idx_officer_profiles_department").on(table.departmentId),
+}));
 
 export const grievances = sqliteTable("grievances", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -110,6 +112,7 @@ export const grievances = sqliteTable("grievances", {
   userIdx: index("idx_grievances_user").on(table.userId),
   dueAtIdx: index("idx_grievances_due_at").on(table.dueAt),
   updatedAtIdx: index("idx_grievances_updated_at").on(table.updatedAt),
+  statusIdx: index("idx_grievances_status").on(table.status),
 }));
 
 export const grievanceHistory = sqliteTable("grievanceHistory", {
@@ -177,6 +180,7 @@ export const notifications = sqliteTable("notifications", {
   createdAt: integer("createdAt", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
 }, table => ({
   userReadIdx: index("idx_notifications_user_read").on(table.userId, table.readAt),
+  userCreatedIdx: index("idx_notifications_user_created").on(table.userId, table.createdAt),
 }));
 
 export type User = typeof users.$inferSelect;

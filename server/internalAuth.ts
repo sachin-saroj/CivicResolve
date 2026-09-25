@@ -26,11 +26,8 @@ export function verifyPassword(password: string, encoded: string | null | undefi
   return expected.length === derived.length && timingSafeEqual(expected, derived);
 }
 
-const DEFAULT_DEV_SECRET = "civic-resolve-default-dev-secret-key-at-least-32-chars";
-
 function secretKey() {
-  const raw = ENV.cookieSecret || DEFAULT_DEV_SECRET;
-  return new TextEncoder().encode(raw);
+  return new TextEncoder().encode(ENV.cookieSecret);
 }
 
 export async function createInternalSession(user: Pick<User, "id" | "role">) {

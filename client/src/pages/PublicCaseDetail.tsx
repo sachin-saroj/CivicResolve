@@ -26,9 +26,10 @@ import { Link, useRoute } from "wouter";
 
 const journey = ["submitted", "acknowledged", "assigned", "in_progress", "resolved", "closed"];
 
-export default function PublicCaseDetail() {
-  const [, params] = useRoute("/cases/:trackingNumber");
-  const trackingNumber = params?.trackingNumber?.toUpperCase() || "";
+export default function PublicCaseDetail({ params }: { params?: { trackingNumber?: string } } = {}) {
+  const [, routeParams] = useRoute("/cases/:trackingNumber");
+  const pathTracking = typeof window !== "undefined" ? window.location.pathname.split("/cases/")[1]?.split("/")[0] : "";
+  const trackingNumber = (params?.trackingNumber || routeParams?.trackingNumber || pathTracking || "").toUpperCase();
   const detail = trpc.portal.detail.useQuery({ trackingNumber }, { enabled: Boolean(trackingNumber) });
 
   const [rating, setRating] = useState("5");

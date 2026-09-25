@@ -295,7 +295,7 @@ export default function Home() {
                     assignedOfficerName: "Marcus Vance (Public Works)",
                     slaDueHours: 72,
                     latestRemarks: "Central dispatch verified the faulty solar battery unit. Replacement unit scheduled for installation tomorrow morning.",
-                    attachmentUrl: "/assets/community_works.jpg",
+                    attachmentUrl: "/assets/community_works.webp",
                   }}
                   interactive
                 />
@@ -386,8 +386,10 @@ export default function Home() {
                   {/* Background Card (Rotated slightly) */}
                   <div className="rounded-2xl overflow-hidden shadow-[0_16px_36px_rgba(0,0,0,0.08)] border border-[#e4e4e7] dark:border-[#272f3d] rotate-3 bg-white dark:bg-[#15181e] p-2 aspect-[4/3]">
                     <img
-                      src="/assets/hero_dossier.jpg"
+                      src="/assets/hero_dossier.webp"
                       alt="Official Civic Redress Record"
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover rounded-xl"
                     />
                   </div>
@@ -395,8 +397,10 @@ export default function Home() {
                   {/* Foreground Card */}
                   <div className="relative -mt-24 -ml-4 rounded-2xl overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.12)] border border-[#e4e4e7] dark:border-[#272f3d] -rotate-2 bg-white dark:bg-[#15181e] p-2 aspect-[4/3]">
                     <img
-                      src="/assets/community_works.jpg"
+                      src="/assets/community_works.webp"
                       alt="Community service team at work"
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover rounded-xl"
                     />
                   </div>
@@ -461,8 +465,10 @@ export default function Home() {
                 {/* Booklet Image */}
                 <div className="rounded-2xl overflow-hidden border border-[#e2dac9] dark:border-[#29303d] shadow-sm">
                   <img
-                    src="/assets/redress_booklet.jpg"
+                    src="/assets/redress_booklet.webp"
                     alt="Civic Redress Charter fine-art booklet"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-auto object-cover"
                   />
                 </div>
