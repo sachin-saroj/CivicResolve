@@ -16,6 +16,7 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { hashPassword } from "./internalAuth";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _tablesInitialized = false;
@@ -166,6 +167,7 @@ export async function getDb() {
       await initTables(client);
       _db = drizzle(client);
       await ensureInitialCatalog();
+      await ensureInitialStaff();
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -309,6 +311,71 @@ export async function ensureInitialCatalog() {
             updatedAt: now,
           });
         }
+      }
+    }
+  }
+}
+
+export async function ensureInitialStaff() {
+  if (!_db) return;
+  const existingAdmin = await _db.select().from(users).where(eq(users.email, "admin@civicresolve.internal")).limit(1);
+  if (existingAdmin[0]) return;
+
+  const now = new Date();
+  const adminHash = hashPassword("Admin@CivicResolve2026!");
+  const officerHash = hashPassword("Officer@CivicResolve2026!");
+
+  await _db.insert(users).values({
+    openId: "admin-system-master",
+    name: "System Administrator",
+    email: "admin@civicresolve.internal",
+    role: "admin",
+    loginMethod: "internal",
+    passwordHash: adminHash,
+    active: 1,
+    createdAt: now,
+    updatedAt: now,
+    lastSignedIn: now,
+  });
+
+  const allDepts = await _db.select().from(departments);
+  const worksDept = allDepts.find(d => d.name === "Public Works");
+  const waterDept = allDepts.find(d => d.name === "Water and Sanitation");
+  const commDept = allDepts.find(d => d.name === "Community Services");
+
+  const staff = [
+    { openId: "officer-works-vance", name: "Marcus Vance", email: "officer.works@civicresolve.internal", deptId: worksDept?.id, desig: "Senior Public Works Inspector" },
+    { openId: "officer-water-rostova", name: "Elena Rostova", email: "officer.water@civicresolve.internal", deptId: waterDept?.id, desig: "Sanitation Operations Lead" },
+    { openId: "officer-community-kalu", name: "David Kalu", email: "officer.community@civicresolve.internal", deptId: commDept?.id, desig: "Community Affairs Coordinator" },
+  ];
+
+  for (const s of staff) {
+    if (!s.deptId) continue;
+    const existing = await _db.select().from(users).where(eq(users.email, s.email)).limit(1);
+    if (!existing[0]) {
+      await _db.insert(users).values({
+        openId: s.openId,
+        name: s.name,
+        email: s.email,
+        role: "officer",
+        departmentId: s.deptId,
+        loginMethod: "internal",
+        passwordHash: officerHash,
+        active: 1,
+        createdAt: now,
+        updatedAt: now,
+        lastSignedIn: now,
+      });
+      const inserted = await _db.select().from(users).where(eq(users.email, s.email)).limit(1);
+      if (inserted[0]) {
+        await _db.insert(officerProfiles).values({
+          userId: inserted[0].id,
+          departmentId: s.deptId,
+          designation: s.desig,
+          availability: "available",
+          createdAt: now,
+          updatedAt: now,
+        });
       }
     }
   }
